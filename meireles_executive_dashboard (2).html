@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Meireles · Gestão de Portfólio</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --accent:#39e87a;--accent-dim:rgba(57,232,122,.10);--accent-mid:rgba(57,232,122,.22);
+  --s0:#080f0b;--s1:#0d1a12;--s2:#111e16;--s3:#172818;--s4:#1d3320;
+  --tp:#e8f5ee;--ts:#8fbfa0;--tt:#4d7a5e;--tm:#2e5040;
+  --bd:rgba(57,232,122,.07);--bm:rgba(57,232,122,.15);--bs:rgba(57,232,122,.28);
+  --amber:#f5a623;--amber-d:rgba(245,166,35,.13);
+  --red:#e85555;--red-d:rgba(232,85,85,.12);
+  --blue:#4ab3f4;--blue-d:rgba(74,179,244,.12);
+  --r-sm:6px;--r-md:10px;--r-lg:16px;--r-xl:22px;
+  --font:'Syne',sans-serif;--mono:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--s0);color:var(--tp);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(57,232,122,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(57,232,122,.025) 1px,transparent 1px);
+  background-size:40px 40px}
+.app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:2rem 1.5rem 4rem}
+
+/* HEADER */
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:2rem;flex-wrap:wrap;animation:fadeDown .5s ease both}
+.brand{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.brand-icon{width:30px;height:30px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.brand-name{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-family:var(--mono)}
+.page-title{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.page-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);color:var(--tt);background:var(--s3);border:1px solid var(--bd);padding:3px 10px;border-radius:20px;margin-top:6px}
+.last-update{font-size:11px;color:var(--tt);font-family:var(--mono);margin-top:4px}
+.header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* BUTTONS */
+.btn{font-family:var(--font);font-size:13px;font-weight:600;padding:8px 18px;border-radius:var(--r-md);border:1px solid var(--bm);background:transparent;color:var(--ts);cursor:pointer;transition:all .18s}
+.btn:hover{background:var(--accent-dim);border-color:var(--bs);color:var(--accent)}
+.btn-primary{background:var(--accent);color:var(--s0);border-color:var(--accent);font-weight:700}
+.btn-primary:hover{background:#5aef91;border-color:#5aef91;color:var(--s0)}
+.btn-export{display:flex;align-items:center;gap:6px;background:var(--s3);border:1px solid var(--bs);color:var(--accent);font-family:var(--mono);font-size:11px;font-weight:700;padding:8px 16px;border-radius:var(--r-md);cursor:pointer;transition:all .18s;letter-spacing:.04em}
+.btn-export:hover{background:var(--accent);color:var(--s0)}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.75rem;animation:fadeUp .5s .1s ease both}
+.metric{background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-lg);padding:1rem 1.1rem;position:relative;overflow:hidden;transition:border-color .2s}
+.metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:.35}
+.metric-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tt);font-family:var(--mono);margin-bottom:7px}
+.metric-value{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.metric-sub{font-size:11px;color:var(--tt);margin-top:3px;font-family:var(--mono)}
+.ca{color:var(--accent)!important}.cb{color:var(--blue)!important}.cr{color:var(--red)!important}
+
+/* TABS */
+.tabs-bar{display:flex;gap:4px;margin-bottom:1.5rem;background:var(--s2);border:1px solid var(--bd);border-radius:var(--r-md);padding:4px;width:fit-content;animation:fadeUp .5s .15s ease both}
+.tab{font-family:var(--font);font-size:12px;font-weight:600;letter-spacing:.04em;padding:6px 18px;border-radius:7px;border:none;background:transparent;color:var(--tt);cursor:pointer;transition:all .18s}
+.tab.active{background:var(--accent);color:var(--s0)}
+.tab:not(.active):hover{color:var(--ts)}
+
+/* FILTERS */
+.filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;animation:fadeUp .5s .2s ease both}
+select{font-family:var(--font);font-size:12px;font-weight:500;padding:7px 28px 7px 12px;border-radius:var(--r-sm);border:1px solid var(--bd);background:var(--s2);color:var(--ts);cursor:pointer;outline:none;transition:border-color .15s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234d7a5e'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+select:focus{border-color:var(--bs);color:var(--tp)}
+select option{background:var(--s3)}
+.hint-text{font-size:11px;color:var(--tm);font-family:var(--mono);margin-left:auto}
+
+/* TABLE - readonly */
+.table-wrap{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r-xl);overflow:hidden;animation:fadeUp .5s .25s ease both}
+.project-table{width:100%;border-collapse:collapse;font-size:13px}
+.project-table thead{background:var(--s3);border-bottom:1px solid var(--bm)}
+.project-table th{text-align:left;padding:11px 16px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--tt);font-family:var(--mono);white-space:nowrap}
+.project-table td{padding:13px 16px;border-bottom:1px solid var(--bd);color:var(--tp);vertical-align:middle}
+.project-table tbody tr{cursor:pointer;transition:background .15s}
+.project-table tbody tr:hover{background:var(--accent-dim)}
+.project-table tbody tr:last-child td{border-bottom:none}
+.proj-name{font-weight:700;font-size:13px}
+.proj-obs{font-size:11px;color:var(--tt);margin-top:2px;font-family:var(--mono)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono);white-space:nowrap}
+.bg{background:rgba(57,232,122,.11);color:var(--accent);border:1px solid rgba(57,232,122,.22)}
+.bb{background:var(--blue-d);color:var(--blue);border:1px solid rgba(74,179,244,.22)}
+.ba{background:var(--amber-d);color:var(--amber);border:1px solid rgba(245,166,35,.22)}
+.br{background:var(--red-d);color:var(--red);border:1px solid rgba(232,85,85,.22)}
+.bgr{background:rgba(143,191,160,.07);color:var(--ts);border:1px solid var(--bd)}
+
+/* PROGRESS */
+.prog-wrap{display:flex;align-items:center;gap:8px}
+.prog-bar{height:4px;width:72px;background:var(--s4);border-radius:4px;overflow:hidden;flex-shrink:0}
+.prog-fill{height:100%;border-radius:4px;transition:width .4s}
+.prog-lbl{font-size:11px;font-family:var(--mono);color:var(--tt);min-width:30px}
+.tasks-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);color:var(--tt)}
+.tasks-chip .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:.5}
+.icon-btn{background:none;border:none;cursor:pointer;color:var(--tm);width:26px;height:26px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
+.icon-btn:hover{color:var(--accent);background:var(--accent-dim)}
+
+/* EMPTY */
+.empty-state{padding:3rem;text-align:center;color:var(--tt)}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:.3}
+.empty-title{font-size:15px;font-weight:700;color:var(--ts);margin-bottom:6px}
+.empty-sub{font-size:12px;font-family:var(--mono)}
+
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;animation:fadeUp .5s .2s ease both}
+.chart-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r-xl);padding:1.25rem}
+.chart-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tt);font-family:var(--mono);margin-bottom:1.2rem}
+.chart-bars{display:flex;align-items:flex-end;gap:8px;height:100px;padding-bottom:8px}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.bar{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height .4s}
+.bar-label{font-size:9px;color:var(--tm);font-family:var(--mono);white-space:nowrap}
+.bar-val{font-size:10px;color:var(--tt);font-family:var(--mono)}
+
+/* TASKS PANEL */
+.tasks-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);z-index:200}
+.tasks-overlay.open{display:block}
+.tasks-panel{position:fixed;top:0;right:-100%;bottom:0;width:min(520px,100vw);background:var(--s1);border-left:1px solid var(--bm);z-index:201;display:flex;flex-direction:column;transition:right .3s cubic-bezier(.4,0,.2,1);overflow:hidden}
+.tasks-panel.open{right:0}
+.tp-header{padding:1.5rem;border-bottom:1px solid var(--bd);flex-shrink:0;background:var(--s2)}
+.tp-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:8px}
+.tp-title{font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.tp-sub{font-size:11px;color:var(--tt);font-family:var(--mono);margin-top:3px}
+.tp-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.tp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.tp-stat{background:var(--s3);border:1px solid var(--bd);border-radius:var(--r-md);padding:8px 10px;text-align:center}
+.tp-stat-val{font-size:20px;font-weight:800;font-family:var(--mono)}
+.tp-stat-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--tt);font-family:var(--mono);margin-top:2px}
+.tp-body{flex:1;overflow-y:auto;padding:1.25rem 1.5rem}
+.tp-body::-webkit-scrollbar{width:4px}
+.tp-body::-webkit-scrollbar-thumb{background:var(--bm);border-radius:4px}
+.tp-footer{padding:1rem 1.5rem;border-top:1px solid var(--bd);flex-shrink:0;background:var(--s2)}
+.task-group{margin-bottom:1.5rem}
+.task-group-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.tg-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);flex:1}
+.tg-count{font-size:10px;font-family:var(--mono);color:var(--tm);background:var(--s3);padding:1px 7px;border-radius:10px}
+.task-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--bd);margin-bottom:6px;background:var(--s2);transition:border-color .15s,background .15s}
+.task-item:hover{border-color:var(--bm);background:var(--s3)}
+.task-check{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--bm);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--s0);font-weight:700}
+.task-check.done{background:var(--accent);border-color:var(--accent)}
+.task-check.done::after{content:'✓'}
+.task-check.doing{background:var(--blue);border-color:var(--blue)}
+.task-check.doing::after{content:'▶';font-size:7px}
+.task-body{flex:1;min-width:0}
+.task-name{font-size:13px;font-weight:600;line-height:1.4}
+.task-name.done-text{text-decoration:line-through;color:var(--tm)}
+.task-meta{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;align-items:center}
+.task-meta-item{font-size:10px;font-family:var(--mono);color:var(--tt)}
+.task-meta-item.late{color:var(--red)}
+.task-extra{font-size:10px;font-family:var(--mono);color:var(--tm);margin-top:3px}
+.task-actions{display:flex;gap:2px;flex-shrink:0}
+
+/* READ-ONLY badge */
+.readonly-tag{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:var(--mono);font-weight:700;color:var(--tt);background:var(--s3);border:1px solid var(--bd);padding:4px 10px;border-radius:20px;letter-spacing:.06em}
+
+/* ── PRINT / EXPORT CSS ── */
+@media print{
+  body{background:#fff!important;color:#111!important}
+  body::before{display:none}
+  .tasks-overlay,.tasks-panel,.tab,.tabs-bar,.header-actions,.filters .hint-text{display:none!important}
+  .app{padding:1rem}
+  .header{border-bottom:1px solid #ddd;margin-bottom:1rem}
+  .brand-icon{background:#39e87a!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .brand-name,.page-title{color:#111!important}
+  .last-update,.page-badge{color:#666!important}
+  .metrics{background:none}
+  .metric{background:#f8f8f8!important;border:1px solid #ddd!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .metric-value{color:#111!important}
+  .metric-label,.metric-sub{color:#666!important}
+  .table-wrap{border:1px solid #ddd!important;border-radius:6px!important}
+  .project-table thead{background:#f0f0f0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .project-table th{color:#444!important}
+  .project-table td{color:#111!important;border-bottom:1px solid #eee!important}
+  .project-table tbody tr:hover{background:none!important}
+  .badge{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .prog-bar{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .prog-fill{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .chart-card{background:#f8f8f8!important;border:1px solid #ddd!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .chart-title{color:#444!important}
+  .bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .bar-label,.bar-val{color:#666!important}
+  .tabs-bar{display:none!important}
+  #view-grafico{display:block!important;margin-top:1.5rem}
+  .charts-grid{grid-template-columns:1fr 1fr}
+  .btn-export,.readonly-tag{display:none!important}
+  @page{margin:1.5cm;size:A4 portrait}
+  *{transform:none!important;animation:none!important}
+  .app{transform:none!important}
+}
+
+@keyframes fadeDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:var(--bm);border-radius:4px}
+@media(max-width:600px){.app{padding:1.25rem 1rem 3rem}.metrics{grid-template-columns:repeat(2,1fr)}.charts-grid{grid-template-columns:1fr}.hint-text{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div>
+      <div class="brand"><div class="brand-icon">⚡</div><span class="brand-name">Meireles</span></div>
+      <div class="page-title">Gestão de Portfólio</div>
+      <div class="page-badge">🔒 somente leitura</div>
+      <div class="last-update" id="last-update">— carregando —</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-export" onclick="exportReport()">↓ Exportar relatório</button>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">Total</div><div class="metric-value ca" id="m-total">0</div><div class="metric-sub">projetos</div></div>
+    <div class="metric"><div class="metric-label">Em andamento</div><div class="metric-value cb" id="m-ongoing">0</div><div class="metric-sub">ativos</div></div>
+    <div class="metric"><div class="metric-label">Concluídos</div><div class="metric-value ca" id="m-done">0</div><div class="metric-sub">finalizados</div></div>
+    <div class="metric"><div class="metric-label">Atrasados</div><div class="metric-value cr" id="m-late">0</div><div class="metric-sub">atenção</div></div>
+    <div class="metric"><div class="metric-label">Progresso médio</div><div class="metric-value" id="m-avg">0%</div><div class="metric-sub">geral</div></div>
+  </div>
+
+  <div class="tabs-bar">
+    <button class="tab active" onclick="setTab('tabela',this)">Projetos</button>
+    <button class="tab" onclick="setTab('grafico',this)">Gráficos</button>
+  </div>
+
+  <div id="view-tabela">
+    <div class="filters">
+      <select id="filter-status" onchange="renderTable()">
+        <option value="">Todos os status</option>
+        <option>Em andamento</option><option>Concluído</option><option>Atrasado</option><option>Pausado</option><option>Planejamento</option>
+      </select>
+      <select id="filter-resp" onchange="renderTable()"><option value="">Todos os responsáveis</option></select>
+      <span class="hint-text">↗ clique em um projeto para ver as tasks</span>
+    </div>
+    <div class="table-wrap" id="table-container"></div>
+  </div>
+
+  <div id="view-grafico" style="display:none;">
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Status dos projetos</div><div id="status-chart" class="chart-bars"></div></div>
+      <div class="chart-card"><div class="chart-title">Progresso por projeto</div><div id="progress-chart" class="chart-bars"></div></div>
+      <div class="chart-card"><div class="chart-title">Tasks por projeto</div><div id="tasks-chart" class="chart-bars"></div></div>
+      <div class="chart-card"><div class="chart-title">Distribuição de prioridade</div><div id="prior-chart" style="padding-top:8px;"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Painel tasks (somente leitura) -->
+<div class="tasks-overlay" id="tasks-overlay" onclick="closeTasks()"></div>
+<div class="tasks-panel" id="tasks-panel">
+  <div class="tp-header">
+    <div class="tp-top">
+      <div><div class="tp-title" id="tp-title">—</div><div class="tp-sub" id="tp-sub">—</div></div>
+      <button class="icon-btn" onclick="closeTasks()">✕</button>
+    </div>
+    <div class="tp-badges" id="tp-badges"></div>
+    <div class="tp-stats" id="tp-stats"></div>
+  </div>
+  <div class="tp-body" id="tp-body"></div>
+  <div class="tp-footer">
+    <div style="font-size:11px;font-family:var(--mono);color:var(--tt);text-align:center;">
+      🔒 Painel somente leitura · edições no painel operacional
+    </div>
+  </div>
+</div>
+
+<script>
+let projects = [];
+const STORAGE_KEY = 'meireles_bi_v2';
+
+const MONDAY_SEED=[{"nome": "IA COB", "resp": "Clara Letícia Farias de Lima", "status": "Em andamento", "inicio": "2026-04-10", "prazo": "2026-04-10", "prog": 45, "prior": "Média", "obs": "4 tasks · 0 concluídas", "tasks": [{"id": "t_11602865586", "nome": "Definição de fornecedor", "resp": "Clara Letícia Farias de Lima", "status": "doing", "inicio": null, "prazo": null, "prog": 50, "prior": "Média", "riscos": "Médio", "categoria": "Interno"}, {"id": "t_11678278064", "nome": "Lívia - Contato com a Trabbe", "resp": "Clara Letícia Farias de Lima", "status": "doing", "inicio": null, "prazo": null, "prog": 60, "prior": "Baixa", "riscos": "Médio", "categoria": "Externo"}, {"id": "t_11704666739", "nome": "Consolidar orçamento da IA da TI", "resp": "Clara Letícia Farias de Lima", "status": "doing", "inicio": "2026-04-10", "prazo": "2026-04-10", "prog": 70, "prior": "Média", "riscos": "Médio", "categoria": "Interno"}, {"id": "t_11759455824", "nome": "Apresentar orçamento da iacob interna no comitê de inovação", "resp": "Clara Letícia Farias de Lima", "status": "todo", "inicio": null, "prazo": null, "prog": 0, "prior": "Média", "riscos": "Baixo", "categoria": "Interno"}], "hours": 32}, {"nome": "Portal de Negociação", "resp": "Clara Letícia Farias de Lima", "status": "Em andamento", "inicio": "2026-03-24", "prazo": "2026-03-30", "prog": 40, "prior": "Média", "obs": "5 tasks · 1 concluídas", "tasks": [{"id": "t_11585770443", "nome": "Alinhar a comercialização do Portal de Negociação", "resp": "Clara Letícia Farias de Lima, Lucas Lima Ferreira", "status": "doing", "inicio": "2026-03-24", "prazo": "2026-03-28", "prog": 50, "prior": "Média", "riscos": "Baixo", "categoria": "Interno"}, {"id": "t_11601545456", "nome": "Solicitar demonstração do Portal de Negociação", "resp": "Lucas Lima Ferreira", "status": "done", "inicio": null, "prazo": null, "prog": 100, "prior": "Média", "riscos": "Médio", "categoria": "Externo"}, {"id": "t_11678155242", "nome": "Configuração DNS - T.I", "resp": "Lucas Lima Ferreira", "status": "doing", "inicio": "2026-03-30", "prazo": "2026-03-30", "prog": 50, "prior": "Média", "riscos": "Médio", "categoria": "Interno, Externo"}, {"id": "t_11704684080", "nome": "Atualizar apresentação comercial", "resp": "Clara Letícia Farias de Lima, Suzana Miranda", "status": "todo", "inicio": null, "prazo": null, "prog": 0, "prior": "Baixa", "riscos": "", "categoria": "Interno"}, {"id": "t_11704693776", "nome": "Criação de vídeo comercial do produto", "resp": "Clara Letícia Farias de Lima, Suzana Miranda", "status": "todo", "inicio": null, "prazo": null, "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}], "hours": 40}, {"nome": "MIRA", "resp": "Clara Letícia Farias de Lima", "status": "Em andamento", "inicio": "2026-03-26", "prazo": "2026-04-17", "prog": 75, "prior": "Alta", "obs": "4 tasks · 3 concluídas", "tasks": [{"id": "t_11585787286", "nome": "Reunir documentação para contrato", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": "2026-03-26", "prazo": "2026-03-26", "prog": 100, "prior": "Alta", "riscos": "Baixo", "categoria": "Interno"}, {"id": "t_11612390090", "nome": "Realização solicitação da carta SEBRAE", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": "2026-03-27", "prazo": "2026-03-27", "prog": 100, "prior": "Média", "riscos": "Baixo", "categoria": "Interno"}, {"id": "t_11704698378", "nome": "Criar grupo com Sarah para centralizar respostas do escopo", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": null, "prazo": null, "prog": 100, "prior": "Baixa", "riscos": "Baixo", "categoria": "Interno"}, {"id": "t_11714501424", "nome": "Realizar reunião com o SEBRAE", "resp": "Clara Letícia Farias de Lima", "status": "doing", "inicio": "2026-04-17", "prazo": "2026-04-17", "prog": 0, "prior": "Baixa", "riscos": "Médio", "categoria": "Externo"}], "hours": 32}, {"nome": "Transbordo de atendimento (Alô MF)", "resp": "Clara Letícia Farias de Lima", "status": "Em andamento", "inicio": "2026-03-26", "prazo": "2026-04-08", "prog": 8, "prior": "Alta", "obs": "5 tasks · 3 concluídas", "tasks": [{"id": "t_11585824316", "nome": "Empacotar o Alô MF, precificar e comercializar (atualizar com o telefone da sugestão do Estácio)", "resp": "Clara Letícia Farias de Lima", "status": "doing", "inicio": "2026-03-26", "prazo": "2026-04-03", "prog": 40, "prior": "Alta", "riscos": "Médio", "categoria": "Interno"}, {"id": "t_11601592847", "nome": "Criar vídeo demonstrativo com IA", "resp": "Clara Letícia Farias de Lima", "status": "todo", "inicio": "2026-03-27", "prazo": "2026-03-27", "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}, {"id": "t_11601592817", "nome": "Desenhar processos", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": "2026-03-27", "prazo": "2026-03-27", "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}, {"id": "t_11601587498", "nome": "Apresentar processos desenhados para Estácio e Amanda", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": "2026-03-27", "prazo": "2026-04-08", "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}, {"id": "t_11712001455", "nome": "Criar apresentação com processos", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": null, "prazo": null, "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}], "hours": 40}, {"nome": "Atendimento de Loja", "resp": "Clara Letícia Farias de Lima", "status": "Em andamento", "inicio": "2026-03-26", "prazo": "2026-04-04", "prog": 53, "prior": "Média", "obs": "8 tasks · 4 concluídas", "tasks": [{"id": "t_11585862786", "nome": "Realizar a documentação dos processos de acordo com o material fornecido", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": "2026-03-27", "prazo": "2026-04-04", "prog": 100, "prior": "Média", "riscos": "Médio", "categoria": "Interno"}, {"id": "t_11601514954", "nome": "Estudar possibilidades de melhorias no totem", "resp": "Clara Letícia Farias de Lima", "status": "todo", "inicio": "2026-03-26", "prazo": "2026-04-02", "prog": 5, "prior": "Média", "riscos": "Baixo", "categoria": "Interno"}, {"id": "t_11601524243", "nome": "Pesquisa acerca da smart copel", "resp": "Clara Letícia Farias de Lima", "status": "todo", "inicio": "2026-03-26", "prazo": "2026-04-02", "prog": 0, "prior": "Média", "riscos": "Baixo", "categoria": "Interno"}, {"id": "t_11678323141", "nome": "Cobrar Estácio - Vídeos", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": null, "prazo": null, "prog": 100, "prior": "Baixa", "riscos": "", "categoria": "Interno"}, {"id": "t_11712205956", "nome": "Processos bizagi - Neoenergia Digital", "resp": "Clara Letícia Farias de Lima", "status": "doing", "inicio": null, "prazo": null, "prog": 10, "prior": "Média", "riscos": "", "categoria": "Interno"}, {"id": "t_11712207094", "nome": "Processos bizagi - Neoenergia Presencial", "resp": "Clara Letícia Farias de Lima", "status": "doing", "inicio": null, "prazo": null, "prog": 10, "prior": "Média", "riscos": "", "categoria": "Interno"}, {"id": "t_11712190371", "nome": "Processos bizagi - Equatorial Digital", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": null, "prazo": null, "prog": 100, "prior": "Média", "riscos": "", "categoria": "Interno"}, {"id": "t_11712207202", "nome": "Processos bizagi - Equatorial Presencial", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": null, "prazo": null, "prog": 100, "prior": "Média", "riscos": "", "categoria": "Interno"}], "hours": 64}, {"nome": "Radar MF", "resp": "Clara Letícia Farias de Lima", "status": "Em andamento", "inicio": "", "prazo": "", "prog": 0, "prior": "Média", "obs": "6 tasks · 4 concluídas", "tasks": [{"id": "t_11681354641", "nome": "1. Identificar quais notificações podemos incluir no escopo", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": null, "prazo": null, "prog": 0, "prior": "Baixa", "riscos": "", "categoria": "Interno"}, {"id": "t_11681376015", "nome": "2. ⁠Identificar se nos sistemas dos clientes hoje tem algum campo possível para aproveitamento de tecnologia", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": null, "prazo": null, "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}, {"id": "t_11681357455", "nome": "3. ⁠Identificar quais os possíveis impactos desse incremento para a operação atual", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": null, "prazo": null, "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}, {"id": "t_11681344682", "nome": "4. Descrição do produto", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": null, "prazo": null, "prog": 0, "prior": "Baixa", "riscos": "", "categoria": "Interno"}, {"id": "t_11704698462", "nome": "Apresentar MVP do Radar MF para Aderaldo e Estácio", "resp": "Clara Letícia Farias de Lima", "status": "doing", "inicio": null, "prazo": null, "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}, {"id": "t_11704726748", "nome": "Alinhar com Paulo Everton a viabilidade de construção do Radar MF a partir do protótipo", "resp": "Clara Letícia Farias de Lima", "status": "doing", "inicio": null, "prazo": null, "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}], "hours": 48}, {"nome": "Backlog", "resp": "Lucas Lima Ferreira", "status": "Em andamento", "inicio": "2026-03-26", "prazo": "2026-04-02", "prog": 12, "prior": "Média", "obs": "4 tasks · 0 concluídas", "tasks": [{"id": "t_11601456323", "nome": "Chamar o Bruno para conversar e unificar a visão da IA de Cobrança", "resp": "Lucas Lima Ferreira, Clara Letícia Farias de Lima", "status": "todo", "inicio": "2026-03-27", "prazo": "2026-03-27", "prog": 0, "prior": "Baixa", "riscos": "", "categoria": "Interno"}, {"id": "t_11601449165", "nome": "Apresentação da informação de baixo custo para demais Enels e demais gás e pé de meia", "resp": "Clara Letícia Farias de Lima", "status": "doing", "inicio": "2026-04-02", "prazo": "2026-04-02", "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}, {"id": "t_11601486196", "nome": "Configuração de domínio e abertura de chamado com a TI", "resp": "Lucas Lima Ferreira", "status": "doing", "inicio": "2026-03-26", "prazo": "2026-03-26", "prog": 50, "prior": "Média", "riscos": "", "categoria": "Interno"}, {"id": "t_11704735988", "nome": "Organizar oficina de ideias com áreas de Inteligência, Projetos, Produtos, Operação e Tecnologia", "resp": "", "status": "todo", "inicio": null, "prazo": null, "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}], "hours": 32}, {"nome": "Tráfego Pago", "resp": "Lucas Lima Ferreira", "status": "Em andamento", "inicio": "2026-03-01", "prazo": "2026-03-23", "prog": 40, "prior": "Média", "obs": "4 tasks · 2 concluídas", "tasks": [{"id": "t_11678219996", "nome": "PPT - Conscientização - Montar Script e PDF", "resp": "Lucas Lima Ferreira", "status": "done", "inicio": "2026-03-01", "prazo": "2026-03-01", "prog": 90, "prior": "Média", "riscos": "Baixo", "categoria": "Interno"}, {"id": "t_11678154746", "nome": "Campanhas de Tráfego - SABESP", "resp": "Lucas Lima Ferreira", "status": "doing", "inicio": "2026-03-23", "prazo": "2026-03-23", "prog": 70, "prior": "Média", "riscos": "Médio", "categoria": "Externo"}, {"id": "t_11678330333", "nome": "Pesquisa - Vale Gás e Pé de Meia", "resp": "Clara Letícia Farias de Lima", "status": "done", "inicio": null, "prazo": null, "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}, {"id": "t_11704694092", "nome": "Atualizar apresentação - Vale Gás e Pé de Meia", "resp": "Clara Letícia Farias de Lima", "status": "doing", "inicio": null, "prazo": null, "prog": 0, "prior": "Média", "riscos": "", "categoria": "Interno"}], "hours": 32}];
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ projects = JSON.parse(raw); return true; }
+  }catch(e){}
+  return false;
+}
+
+const statusColors={'Em andamento':'bb','Concluído':'bg','Atrasado':'br','Pausado':'bgr','Planejamento':'ba'};
+const priorColors={'Alta':'ba','Crítica':'br','Média':'bb','Baixa':'bgr'};
+const progColor=p=>p>=100?'#39e87a':p>=50?'#4ab3f4':'#f5a623';
+
+function setTab(tab,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
+  document.getElementById('view-tabela').style.display=tab==='tabela'?'':'none';
+  document.getElementById('view-grafico').style.display=tab==='grafico'?'':'none';
+  if(tab==='grafico')renderCharts();
+}
+
+// ── PAINEL TASKS (somente leitura) ──
+let activeProjectIdx = -1;
+function openTasks(idx){
+  activeProjectIdx=idx;const p=projects[idx];
+  document.getElementById('tp-title').textContent=p.nome;
+  const ps=p.prazo?new Date(p.prazo+'T00:00:00').toLocaleDateString('pt-BR'):null;
+  document.getElementById('tp-sub').textContent=[p.resp||null,ps?`prazo ${ps}`:null].filter(Boolean).join(' · ')||'—';
+  document.getElementById('tp-badges').innerHTML=`<span class="badge ${statusColors[p.status]||'bgr'}">${p.status}</span><span class="badge ${priorColors[p.prior]||'bgr'}">${p.prior}</span>`;
+  renderTaskPanel();
+  document.getElementById('tasks-overlay').classList.add('open');
+  document.getElementById('tasks-panel').classList.add('open');
+}
+function closeTasks(){document.getElementById('tasks-overlay').classList.remove('open');document.getElementById('tasks-panel').classList.remove('open');activeProjectIdx=-1;}
+
+function renderTaskPanel(){
+  if(activeProjectIdx<0)return;
+  const p=projects[activeProjectIdx];const tasks=p.tasks||[];
+  const todo=tasks.filter(t=>t.status==='todo').length,doing=tasks.filter(t=>t.status==='doing').length,done=tasks.filter(t=>t.status==='done').length;
+  document.getElementById('tp-stats').innerHTML=`
+    <div class="tp-stat"><div class="tp-stat-val" style="color:var(--text-secondary);">${todo}</div><div class="tp-stat-lbl">A iniciar</div></div>
+    <div class="tp-stat"><div class="tp-stat-val" style="color:var(--blue);">${doing}</div><div class="tp-stat-lbl">Andamento</div></div>
+    <div class="tp-stat"><div class="tp-stat-val" style="color:var(--accent);">${done}</div><div class="tp-stat-lbl">Concluídas</div></div>`;
+  const body=document.getElementById('tp-body');
+  if(!tasks.length){body.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Nenhuma task ainda</div><div class="empty-sub">Clique em "+ Nova task" para começar</div></div>';return;}
+  const groups=[{key:'todo',label:'A iniciar',color:'var(--text-tertiary)'},{key:'doing',label:'Em andamento',color:'var(--blue)'},{key:'done',label:'Concluída',color:'var(--accent)'}];
+  body.innerHTML=groups.map(g=>{const list=tasks.filter(t=>t.status===g.key);if(!list.length)return'';return`<div class="task-group"><div class="task-group-header"><div class="tg-dot" style="background:${g.color};"></div><span class="tg-label" style="color:${g.color};">${g.label}</span><span class="tg-count">${list.length}</span></div>${list.map(t=>taskItemHTML(t)).join('')}</div>`;}).join('')||'<div class="empty-state"><div class="empty-sub">Sem tasks.</div></div>';
+}
+
+
+function taskItemHTML(t){
+  const ps=t.prazo?new Date(t.prazo+'T00:00:00').toLocaleDateString('pt-BR'):null;
+  const late=t.prazo&&new Date(t.prazo)<new Date()&&t.status!=='done';
+  const cc=t.status==='done'?'done':t.status==='doing'?'doing':'';
+  const extras=[t.riscos?`⚠ ${t.riscos}`:'',t.categoria?`🏷 ${t.categoria}`:''].filter(Boolean).join(' · ');
+  return`<div class="task-item">
+    <div class="task-check ${cc}"></div>
+    <div class="task-body">
+      <div class="task-name ${t.status==='done'?'done-text':''}">${t.nome}</div>
+      <div class="task-meta">
+        ${t.resp?`<span class="task-meta-item">👤 ${t.resp.split(',')[0].trim()}</span>`:''}
+        ${ps?`<span class="task-meta-item ${late?'late':''}">📅 ${ps}${late?' ⚠':''}</span>`:''}
+        ${t.prior&&t.prior!=='Média'?`<span class="badge ${priorColors[t.prior]||'bgr'}" style="padding:1px 6px;font-size:9px;">${t.prior}</span>`:''}
+      </div>
+      ${extras?`<div class="task-extra">${extras}</div>`:''}
+    </div>
+  </div>`;
+}
+
+// ── MÉTRICAS ──
+function updateMetrics(){
+  const total=projects.length,done=projects.filter(p=>p.status==='Concluído').length,late=projects.filter(p=>p.status==='Atrasado').length,ongoing=projects.filter(p=>p.status==='Em andamento').length,avg=total?Math.round(projects.reduce((s,p)=>s+p.prog,0)/total):0;
+  document.getElementById('m-total').textContent=total;document.getElementById('m-done').textContent=done;document.getElementById('m-late').textContent=late;document.getElementById('m-ongoing').textContent=ongoing;document.getElementById('m-avg').textContent=avg+'%';
+}
+
+function updateFilters(){
+  const rs=[...new Set(projects.map(p=>p.resp).filter(Boolean))];const sel=document.getElementById('filter-resp');const cur=sel.value;
+  sel.innerHTML='<option value="">Todos os responsáveis</option>';rs.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;sel.appendChild(o);});if(rs.includes(cur))sel.value=cur;
+}
+
+function renderTable(){
+  const fs=document.getElementById('filter-status').value,fr=document.getElementById('filter-resp').value;
+  const list=projects.filter(p=>(!fs||p.status===fs)&&(!fr||p.resp===fr));
+  const c=document.getElementById('table-container');
+  if(!list.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">🗂️</div><div class="empty-title">Nenhum projeto</div><div class="empty-sub">Dados carregados do painel operacional</div></div>';return;}
+  c.innerHTML=`<table class="project-table"><thead><tr><th>Projeto</th><th>Responsável</th><th>Status</th><th>Progresso</th><th>Prioridade</th><th>Tasks</th></tr></thead><tbody>${list.map(p=>{
+    const ri=projects.indexOf(p);const tasks=p.tasks||[];const dt=tasks.filter(t=>t.status==='done').length;
+    return`<tr onclick="openTasks(${ri})"><td><div class="proj-name">${p.nome}</div>${p.obs?`<div class="proj-obs">${p.obs}</div>`:''}</td><td style="color:var(--ts);font-size:13px;">${p.resp||'—'}</td><td><span class="badge ${statusColors[p.status]||'bgr'}">${p.status}</span></td><td><div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" style="width:${p.prog}%;background:${progColor(p.prog)}"></div></div><span class="prog-lbl">${p.prog}%</span></div></td><td><span class="badge ${priorColors[p.prior]||'bgr'}">${p.prior}</span></td><td>${tasks.length?`<span class="tasks-chip"><span class="dot"></span>${dt}/${tasks.length}</span>`:'<span style="color:var(--tm);font-size:11px;font-family:var(--mono);">—</span>'}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+function renderCharts(){
+  const sm={};projects.forEach(p=>{sm[p.status]=(sm[p.status]||0)+1;});
+  const sc2={'Em andamento':'#4ab3f4','Concluído':'#39e87a','Atrasado':'#e85555','Pausado':'#4d7a5e','Planejamento':'#f5a623'};
+  const sc=document.getElementById('status-chart');
+  if(!Object.keys(sm).length){sc.innerHTML='<div style="color:var(--text-muted);font-size:12px;font-family:var(--mono);">sem dados</div>';}
+  else{const mx=Math.max(...Object.values(sm));sc.innerHTML=Object.entries(sm).map(([k,v])=>`<div class="bar-wrap"><div class="bar-val">${v}</div><div class="bar" style="height:${Math.round(v/mx*80)}px;background:${sc2[k]||'#4d7a5e'};opacity:.85;"></div><div class="bar-label">${k.replace('Em andamento','Andamento').replace('Planejamento','Plan.')}</div></div>`).join('');}
+  const pc=document.getElementById('progress-chart');const pp=[...projects].sort((a,b)=>b.prog-a.prog).slice(0,7);
+  if(!pp.length){pc.innerHTML='<div style="color:var(--text-muted);font-size:12px;font-family:var(--mono);">sem dados</div>';}
+  else{pc.innerHTML=pp.map(p=>`<div class="bar-wrap"><div class="bar-val">${p.prog}%</div><div class="bar" style="height:${Math.max(4,p.prog*.8)}px;background:${progColor(p.prog)};opacity:.85;"></div><div class="bar-label">${p.nome.substring(0,7)}${p.nome.length>7?'…':''}</div></div>`).join('');}
+
+  // Tasks por projeto
+  const tc=document.getElementById('tasks-chart');
+  const tp=[...projects].filter(p=>p.tasks&&p.tasks.length).sort((a,b)=>b.tasks.length-a.tasks.length).slice(0,7);
+  if(!tp.length){tc.innerHTML='<div style="color:var(--tm);font-size:12px;font-family:var(--mono)">sem dados</div>';}
+  else{
+    const mx=Math.max(...tp.map(p=>p.tasks.length));
+    tc.innerHTML=tp.map(p=>{
+      const done=p.tasks.filter(t=>t.status==='done').length;
+      const total=p.tasks.length;
+      const h=Math.round(total/mx*80);
+      const doneH=Math.round(done/total*h);
+      const restH=h-doneH;
+      return `<div class="bar-wrap">
+        <div class="bar-val">${total}</div>
+        <div style="width:100%;height:${h}px;border-radius:4px 4px 0 0;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="height:${restH}px;background:var(--s4);"></div>
+          <div style="height:${doneH}px;background:#39e87a;opacity:.85;min-height:${done?2:0}px;"></div>
+        </div>
+        <div class="bar-label">${p.nome.substring(0,7)}${p.nome.length>7?'…':''}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Distribuição de prioridade
+  const priorColors2={'Alta':'#f5a623','Crítica':'#e85555','Média':'#4ab3f4','Baixa':'#4d7a5e'};
+  const priorCount={};
+  projects.forEach(p=>{priorCount[p.prior]=(priorCount[p.prior]||0)+1;});
+  const totalP=projects.length||1;
+  const priEl=document.getElementById('prior-chart');
+  if(!priEl)return;
+  priEl.innerHTML=Object.entries(priorCount).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+        <span style="font-size:12px;font-weight:600;color:${priorColors2[k]||'var(--ts)'};">${k}</span>
+        <span style="font-size:11px;font-family:var(--mono);color:var(--tt);">${v} projeto${v>1?'s':''} · ${Math.round(v/totalP*100)}%</span>
+      </div>
+      <div style="height:6px;background:var(--s4);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${Math.round(v/totalP*100)}%;background:${priorColors2[k]||'var(--ts)'};opacity:.85;border-radius:4px;transition:width .6s ease;"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ── EXPORTAR RELATÓRIO ──
+function exportReport(){
+  // Show all content before print
+  document.getElementById('view-grafico').style.display='block';
+  renderCharts();
+  setTimeout(()=>{
+    window.print();
+    // Restore after print dialog closes
+    setTimeout(()=>{
+      document.getElementById('view-grafico').style.display='none';
+    },500);
+  },300);
+}
+
+// ── POLLING: atualiza a cada 30s se o painel operacional estiver aberto na mesma máquina ──
+function syncFromOperational(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const fresh = JSON.parse(raw);
+      if(JSON.stringify(fresh) !== JSON.stringify(projects)){
+        projects = fresh;
+        updateMetrics();
+        renderTable();
+        updateFilters();
+        renderCharts();
+        const d=new Date();
+        document.getElementById('last-update').textContent=`sync ${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+      }
+    }
+  }catch(e){}
+}
+
+// ── INIT ──
+
+const SHEETS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRtC9kYbUi2GlP9lh2Z1VOZUGBJ7lg0gzOWGHjfLC9_l55CtyvUoEdEdozf09Jpn6Z2A24dGX1T1lXd/pub?output=csv";
+
+// Parse CSV text into rows
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  return lines.map(line => {
+    const cols = []; let cur = ''; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    cols.push(cur.trim());
+    return cols;
+  });
+}
+
+// Convert Excel serial date to YYYY-MM-DD
+function excelDate(v) {
+  if (!v || isNaN(v)) return null;
+  try { return new Date(new Date(1899,11,30).getTime() + Number(v)*86400000).toISOString().slice(0,10); } catch { return null; }
+}
+
+// Parse monday-style sheet into projects array
+function parseSheetsData(rows) {
+  const PM = {'High':'Alta','Medium':'Média','Low':'Baixa','Critical':'Crítica'};
+  const SM = {'Em Progresso':'Em andamento','Concluído':'Concluído','Não Iniciado':'Planejamento'};
+  const groups = []; let cur = null;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]; if (!row || !row[0]) continue;
+    const c = row[0].trim();
+    if (['Name','Subitems','Gestão de Projetos','nan',''].includes(c) || c.includes('Quadro para gerir')) continue;
+    const itemId = row[10], isItem = itemId && itemId.trim() !== '';
+    if (!isItem) { cur = {nome:c, tasks:[]}; groups.push(cur); }
+    else if (cur) {
+      const prog = Math.min(100, Math.max(0, parseInt(row[8]) || 0));
+      const pr = row[9] ? row[9].trim() : 'Média';
+      const prior = PM[pr] || pr || 'Média';
+      const sr = row[2] ? row[2].trim() : '';
+      const spt = SM[sr] || 'Planejamento';
+      const v6 = parseFloat(row[6]), v7 = parseFloat(row[7]);
+      cur.tasks.push({
+        id: 't_' + itemId.trim(),
+        nome: c,
+        resp: row[4] ? row[4].trim() : '',
+        status: spt==='Concluído'?'done':(spt==='Em andamento'?'doing':'todo'),
+        inicio: !isNaN(v6) ? excelDate(v6) : (row[6]||null),
+        prazo:  !isNaN(v7) ? excelDate(v7) : (row[7]||null),
+        prog, prior,
+        riscos: row[3] ? row[3].trim() : '',
+        categoria: row[5] ? row[5].trim() : ''
+      });
+    }
+  }
+  return groups.filter(g => g.tasks.length).map(g => {
+    const tasks = g.tasks;
+    const done = tasks.filter(t => t.status==='done').length;
+    const avg = Math.round(tasks.reduce((s,t) => s+t.prog, 0) / tasks.length);
+    const ps = done===tasks.length ? 'Concluído' : (tasks.some(t=>t.status==='doing') ? 'Em andamento' : 'Planejamento');
+    const resps = tasks.map(t=>t.resp).filter(Boolean);
+    const resp = resps.length ? resps[0].split(',')[0].trim() : '';
+    const starts = tasks.map(t=>t.inicio).filter(Boolean);
+    const ends   = tasks.map(t=>t.prazo).filter(Boolean);
+    const priors = tasks.map(t=>t.prior);
+    const prior = priors.includes('Alta')||priors.includes('Crítica') ? 'Alta' : 'Média';
+    return {
+      nome:g.nome, resp, status:ps,
+      inicio: starts.length ? starts.sort()[0] : '',
+      prazo:  ends.length   ? ends.sort().slice(-1)[0] : '',
+      prog: avg, prior,
+      obs: tasks.length + ' tasks · ' + done + ' concluídas',
+      tasks, hours: tasks.length * 8
+    };
+  });
+}
+
+// Load from Google Sheets, fallback to localStorage then seed
+async function loadFromSheets() {
+  const statusEl = document.getElementById('last-update');
+  if (statusEl) statusEl.textContent = '⟳ carregando do Sheets...';
+  try {
+    const res = await fetch(SHEETS_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    const parsed = parseSheetsData(rows);
+    if (!parsed.length) throw new Error('sem dados');
+    projects = parsed;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(projects)); } catch(e) {}
+    const d = new Date();
+    if (statusEl) statusEl.textContent = '✓ Sheets · ' + d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  } catch(err) {
+    // fallback: localStorage or seed
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) { projects = JSON.parse(raw); }
+      else { projects = MONDAY_SEED; }
+    } catch(e) { projects = MONDAY_SEED; }
+    const d = new Date();
+    if (statusEl) statusEl.textContent = '⚠ offline · ' + d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  }
+  updateMetrics(); renderTable(); updateFilters(); setTimeout(renderCharts, 100);
+}
+
+loadFromSheets();
+setInterval(loadFromSheets, 60000); // auto-refresh a cada 60s
+</script>
+</body>
+</html>
