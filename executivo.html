@@ -442,12 +442,114 @@ function syncFromOperational(){
 }
 
 // ── INIT ──
-if(!loadData()){ projects = MONDAY_SEED; }
-updateMetrics();renderTable();updateFilters();
-setTimeout(renderCharts, 100);
-setInterval(syncFromOperational, 30000);
-const d=new Date();
-document.getElementById('last-update').textContent=`sync ${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+
+const SHEETS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRtC9kYbUi2GlP9lh2Z1VOZUGBJ7lg0gzOWGHjfLC9_l55CtyvUoEdEdozf09Jpn6Z2A24dGX1T1lXd/pub?output=csv";
+
+// Parse CSV text into rows
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  return lines.map(line => {
+    const cols = []; let cur = ''; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    cols.push(cur.trim());
+    return cols;
+  });
+}
+
+// Convert Excel serial date to YYYY-MM-DD
+function excelDate(v) {
+  if (!v || isNaN(v)) return null;
+  try { return new Date(new Date(1899,11,30).getTime() + Number(v)*86400000).toISOString().slice(0,10); } catch { return null; }
+}
+
+// Parse monday-style sheet into projects array
+function parseSheetsData(rows) {
+  const PM = {'High':'Alta','Medium':'Média','Low':'Baixa','Critical':'Crítica'};
+  const SM = {'Em Progresso':'Em andamento','Concluído':'Concluído','Não Iniciado':'Planejamento'};
+  const groups = []; let cur = null;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]; if (!row || !row[0]) continue;
+    const c = row[0].trim();
+    if (['Name','Subitems','Gestão de Projetos','nan',''].includes(c) || c.includes('Quadro para gerir')) continue;
+    const itemId = row[10], isItem = itemId && itemId.trim() !== '';
+    if (!isItem) { cur = {nome:c, tasks:[]}; groups.push(cur); }
+    else if (cur) {
+      const prog = Math.min(100, Math.max(0, parseInt(row[8]) || 0));
+      const pr = row[9] ? row[9].trim() : 'Média';
+      const prior = PM[pr] || pr || 'Média';
+      const sr = row[2] ? row[2].trim() : '';
+      const spt = SM[sr] || 'Planejamento';
+      const v6 = parseFloat(row[6]), v7 = parseFloat(row[7]);
+      cur.tasks.push({
+        id: 't_' + itemId.trim(),
+        nome: c,
+        resp: row[4] ? row[4].trim() : '',
+        status: spt==='Concluído'?'done':(spt==='Em andamento'?'doing':'todo'),
+        inicio: !isNaN(v6) ? excelDate(v6) : (row[6]||null),
+        prazo:  !isNaN(v7) ? excelDate(v7) : (row[7]||null),
+        prog, prior,
+        riscos: row[3] ? row[3].trim() : '',
+        categoria: row[5] ? row[5].trim() : ''
+      });
+    }
+  }
+  return groups.filter(g => g.tasks.length).map(g => {
+    const tasks = g.tasks;
+    const done = tasks.filter(t => t.status==='done').length;
+    const avg = Math.round(tasks.reduce((s,t) => s+t.prog, 0) / tasks.length);
+    const ps = done===tasks.length ? 'Concluído' : (tasks.some(t=>t.status==='doing') ? 'Em andamento' : 'Planejamento');
+    const resps = tasks.map(t=>t.resp).filter(Boolean);
+    const resp = resps.length ? resps[0].split(',')[0].trim() : '';
+    const starts = tasks.map(t=>t.inicio).filter(Boolean);
+    const ends   = tasks.map(t=>t.prazo).filter(Boolean);
+    const priors = tasks.map(t=>t.prior);
+    const prior = priors.includes('Alta')||priors.includes('Crítica') ? 'Alta' : 'Média';
+    return {
+      nome:g.nome, resp, status:ps,
+      inicio: starts.length ? starts.sort()[0] : '',
+      prazo:  ends.length   ? ends.sort().slice(-1)[0] : '',
+      prog: avg, prior,
+      obs: tasks.length + ' tasks · ' + done + ' concluídas',
+      tasks, hours: tasks.length * 8
+    };
+  });
+}
+
+// Load from Google Sheets, fallback to localStorage then seed
+async function loadFromSheets() {
+  const statusEl = document.getElementById('last-update');
+  if (statusEl) statusEl.textContent = '⟳ carregando do Sheets...';
+  try {
+    const res = await fetch(SHEETS_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    const parsed = parseSheetsData(rows);
+    if (!parsed.length) throw new Error('sem dados');
+    projects = parsed;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(projects)); } catch(e) {}
+    const d = new Date();
+    if (statusEl) statusEl.textContent = '✓ Sheets · ' + d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  } catch(err) {
+    // fallback: localStorage or seed
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) { projects = JSON.parse(raw); }
+      else { projects = MONDAY_SEED; }
+    } catch(e) { projects = MONDAY_SEED; }
+    const d = new Date();
+    if (statusEl) statusEl.textContent = '⚠ offline · ' + d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  }
+  updateMetrics(); renderTable(); updateFilters(); setTimeout(renderCharts, 100);
+}
+
+loadFromSheets();
+setInterval(loadFromSheets, 60000); // auto-refresh a cada 60s
 </script>
 </body>
 </html>
