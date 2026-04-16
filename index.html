@@ -328,7 +328,7 @@ function setTab(tab,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
   document.getElementById('view-tabela').style.display=tab==='tabela'?'':'none';
   document.getElementById('view-grafico').style.display=tab==='grafico'?'':'none';
-  if(tab==='grafico')renderCharts();
+  if(tab==='grafico'){document.getElementById('view-grafico').style.display='';renderCharts();}
 }
 
 function openModal(idx=-1){
@@ -446,6 +446,47 @@ function renderCharts(){
   const pc=document.getElementById('progress-chart');const pp=[...projects].sort((a,b)=>b.prog-a.prog).slice(0,7);
   if(!pp.length){pc.innerHTML='<div style="color:var(--text-muted);font-size:12px;font-family:var(--mono);">sem dados</div>';}
   else{pc.innerHTML=pp.map(p=>`<div class="bar-wrap"><div class="bar-val">${p.prog}%</div><div class="bar" style="height:${Math.max(4,p.prog*.8)}px;background:${progColor(p.prog)};opacity:.85;"></div><div class="bar-label">${p.nome.substring(0,7)}${p.nome.length>7?'…':''}</div></div>`).join('');}
+
+  // Tasks por projeto
+  const tc=document.getElementById('tasks-chart');
+  const tp=[...projects].filter(p=>p.tasks&&p.tasks.length).sort((a,b)=>b.tasks.length-a.tasks.length).slice(0,7);
+  if(!tp.length){tc.innerHTML='<div style="color:var(--tm);font-size:12px;font-family:var(--mono)">sem dados</div>';}
+  else{
+    const mx=Math.max(...tp.map(p=>p.tasks.length));
+    tc.innerHTML=tp.map(p=>{
+      const done=p.tasks.filter(t=>t.status==='done').length;
+      const total=p.tasks.length;
+      const h=Math.round(total/mx*80);
+      const doneH=Math.round(done/total*h);
+      const restH=h-doneH;
+      return `<div class="bar-wrap">
+        <div class="bar-val">${total}</div>
+        <div style="width:100%;height:${h}px;border-radius:4px 4px 0 0;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="height:${restH}px;background:var(--s4);"></div>
+          <div style="height:${doneH}px;background:#39e87a;opacity:.85;min-height:${done?2:0}px;"></div>
+        </div>
+        <div class="bar-label">${p.nome.substring(0,7)}${p.nome.length>7?'…':''}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Distribuição de prioridade
+  const priorColors2={'Alta':'#f5a623','Crítica':'#e85555','Média':'#4ab3f4','Baixa':'#4d7a5e'};
+  const priorCount={};
+  projects.forEach(p=>{priorCount[p.prior]=(priorCount[p.prior]||0)+1;});
+  const totalP=projects.length||1;
+  const priEl=document.getElementById('prior-chart');
+  if(!priEl)return;
+  priEl.innerHTML=Object.entries(priorCount).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+        <span style="font-size:12px;font-weight:600;color:${priorColors2[k]||'var(--ts)'};">${k}</span>
+        <span style="font-size:11px;font-family:var(--mono);color:var(--tt);">${v} projeto${v>1?'s':''} · ${Math.round(v/totalP*100)}%</span>
+      </div>
+      <div style="height:6px;background:var(--s4);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${Math.round(v/totalP*100)}%;background:${priorColors2[k]||'var(--ts)'};opacity:.85;border-radius:4px;transition:width .6s ease;"></div>
+      </div>
+    </div>`).join('');
 }
 function importCSV(e){
   const file=e.target.files[0];if(!file)return;const reader=new FileReader();
@@ -504,6 +545,8 @@ function parseMondaySheet(raw){
 }
 if(!loadData()){projects=MONDAY_SEED;}
 update();
+// pre-render charts so they're ready
+setTimeout(renderCharts, 100);
 </script>
 </body>
 </html>
