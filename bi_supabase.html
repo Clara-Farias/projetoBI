@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meireles · Painel de Projetos</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent:    #39e87a;
+  --accent-dim: rgba(57,232,122,0.10);
+  --accent-mid: rgba(57,232,122,0.22);
+  --surface-0: #080f0b;
+  --surface-1: #0d1a12;
+  --surface-2: #111e16;
+  --surface-3: #172818;
+  --surface-4: #1d3320;
+  --text-primary:   #e8f5ee;
+  --text-secondary: #8fbfa0;
+  --text-tertiary:  #4d7a5e;
+  --text-muted:     #2e5040;
+  --border-subtle:  rgba(57,232,122,0.07);
+  --border-medium:  rgba(57,232,122,0.15);
+  --border-strong:  rgba(57,232,122,0.28);
+  --amber: #f5a623; --amber-dim: rgba(245,166,35,0.13);
+  --red:   #e85555; --red-dim:   rgba(232,85,85,0.12);
+  --blue:  #4ab3f4; --blue-dim:  rgba(74,179,244,0.12);
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 22px;
+  --font: 'Syne', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--surface-0); color: var(--text-primary); min-height: 100vh; }
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image: linear-gradient(rgba(57,232,122,0.025) 1px,transparent 1px), linear-gradient(90deg,rgba(57,232,122,0.025) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+.app { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:2rem 1.5rem 4rem; }
+
+/* HEADER */
+.header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:2.5rem; flex-wrap:wrap; animation:fadeDown .5s ease both; }
+.brand { display:flex; align-items:center; gap:9px; margin-bottom:5px; }
+.brand-icon { width:30px;height:30px; background:var(--accent); border-radius:8px; display:flex;align-items:center;justify-content:center; font-size:15px; }
+.brand-name { font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-family:var(--mono); }
+.page-title { font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--text-primary); }
+.last-update { font-size:11px;color:var(--text-tertiary);font-family:var(--mono);margin-top:4px; }
+.header-actions { display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
+
+/* BUTTONS */
+.btn { font-family:var(--font);font-size:13px;font-weight:600;padding:8px 18px;border-radius:var(--r-md);border:1px solid var(--border-medium);background:transparent;color:var(--text-secondary);cursor:pointer;transition:all .18s; }
+.btn:hover { background:var(--accent-dim);border-color:var(--border-strong);color:var(--accent); }
+.btn-primary { background:var(--accent);color:var(--surface-0);border-color:var(--accent);font-weight:700; }
+.btn-primary:hover { background:#5aef91;border-color:#5aef91;color:var(--surface-0); }
+.btn-danger { background:var(--red-dim);color:var(--red);border-color:rgba(232,85,85,.3);font-weight:700; }
+.btn-danger:hover { background:var(--red);color:#fff; }
+.btn-ghost { border-style:dashed;display:flex;align-items:center;gap:6px; }
+.btn-ghost:hover { background:var(--accent-dim);border-color:var(--accent);color:var(--accent); }
+
+/* EDIT MODE BADGE */
+.edit-badge { display:none;align-items:center;gap:6px;font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);background:var(--amber-dim);border:1px solid rgba(245,166,35,.3);border-radius:20px;padding:4px 12px; }
+.edit-badge.visible { display:flex; }
+
+/* METRICS */
+.metrics { display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:2rem;animation:fadeUp .5s .1s ease both; }
+.metric { background:var(--surface-2);border:1px solid var(--border-subtle);border-radius:var(--r-lg);padding:1.1rem 1.2rem;position:relative;overflow:hidden;transition:border-color .2s,transform .2s; }
+.metric:hover { border-color:var(--border-medium);transform:translateY(-2px); }
+.metric::before { content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:.35; }
+.metric-label { font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary);font-family:var(--mono);margin-bottom:8px; }
+.metric-value { font-size:28px;font-weight:800;letter-spacing:-.03em;color:var(--text-primary);line-height:1; }
+.metric-sub { font-size:11px;color:var(--text-tertiary);margin-top:4px;font-family:var(--mono); }
+.c-accent{color:var(--accent)!important} .c-blue{color:var(--blue)!important} .c-amber{color:var(--amber)!important} .c-red{color:var(--red)!important}
+
+/* TABS */
+.tabs-bar { display:flex;gap:4px;margin-bottom:1.5rem;background:var(--surface-2);border:1px solid var(--border-subtle);border-radius:var(--r-md);padding:4px;width:fit-content;animation:fadeUp .5s .15s ease both; }
+.tab { font-family:var(--font);font-size:12px;font-weight:600;letter-spacing:.04em;padding:6px 18px;border-radius:7px;border:none;background:transparent;color:var(--text-tertiary);cursor:pointer;transition:all .18s; }
+.tab.active { background:var(--accent);color:var(--surface-0); }
+.tab:not(.active):hover { color:var(--text-secondary); }
+
+/* FILTERS */
+.filters { display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;animation:fadeUp .5s .2s ease both; }
+select { font-family:var(--font);font-size:12px;font-weight:500;padding:7px 28px 7px 12px;border-radius:var(--r-sm);border:1px solid var(--border-subtle);background:var(--surface-2);color:var(--text-secondary);cursor:pointer;outline:none;transition:border-color .15s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234d7a5e'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center; }
+select:focus { border-color:var(--border-strong);color:var(--text-primary); }
+select option { background:var(--surface-3); }
+.hint-text { font-size:11px;color:var(--text-muted);font-family:var(--mono);margin-left:auto; }
+
+/* TABLE */
+.table-wrap { background:var(--surface-1);border:1px solid var(--border-subtle);border-radius:var(--r-xl);overflow:hidden;animation:fadeUp .5s .25s ease both; }
+.project-table { width:100%;border-collapse:collapse;font-size:13px; }
+.project-table thead { background:var(--surface-3);border-bottom:1px solid var(--border-medium); }
+.project-table th { text-align:left;padding:12px 16px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary);font-family:var(--mono);white-space:nowrap; }
+.project-table td { padding:13px 16px;border-bottom:1px solid var(--border-subtle);color:var(--text-primary);vertical-align:middle; }
+.project-table tbody tr { cursor:pointer;transition:background .15s; }
+.project-table tbody tr:hover { background:var(--accent-dim); }
+.project-table tbody tr:last-child td { border-bottom:none; }
+.proj-name { font-weight:700;font-size:13px; }
+.proj-obs { font-size:11px;color:var(--text-tertiary);margin-top:2px;font-family:var(--mono); }
+
+/* BADGES */
+.badge { display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono);white-space:nowrap; }
+.badge-green { background:rgba(57,232,122,.11);color:var(--accent);border:1px solid rgba(57,232,122,.22); }
+.badge-amber { background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,166,35,.22); }
+.badge-blue  { background:var(--blue-dim);color:var(--blue);border:1px solid rgba(74,179,244,.22); }
+.badge-red   { background:var(--red-dim);color:var(--red);border:1px solid rgba(232,85,85,.22); }
+.badge-gray  { background:rgba(143,191,160,.07);color:var(--text-secondary);border:1px solid var(--border-subtle); }
+
+/* PROGRESS */
+.prog-wrap { display:flex;align-items:center;gap:8px; }
+.prog-bar { height:4px;width:72px;background:var(--surface-4);border-radius:4px;overflow:hidden;flex-shrink:0; }
+.prog-fill { height:100%;border-radius:4px;transition:width .4s; }
+.prog-lbl { font-size:11px;font-family:var(--mono);color:var(--text-tertiary);min-width:30px; }
+
+/* ROW ACTIONS */
+.row-actions { display:flex;gap:2px; }
+.icon-btn { background:none;border:none;cursor:pointer;color:var(--text-muted);width:26px;height:26px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s; }
+.icon-btn:hover { color:var(--accent);background:var(--accent-dim); }
+.icon-btn.danger:hover { color:var(--red);background:var(--red-dim); }
+.tasks-chip { display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:var(--mono);color:var(--text-tertiary); }
+.tasks-chip .dot { width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:.5; }
+
+/* EMPTY */
+.empty-state { padding:3rem;text-align:center;color:var(--text-tertiary); }
+.empty-icon { font-size:36px;margin-bottom:12px;opacity:.3; }
+.empty-title { font-size:15px;font-weight:700;color:var(--text-secondary);margin-bottom:6px; }
+.empty-sub { font-size:12px;font-family:var(--mono); }
+
+/* CHARTS */
+.charts-grid { display:grid;grid-template-columns:1fr 1fr;gap:1rem;animation:fadeUp .5s .2s ease both; }
+.chart-card { background:var(--surface-1);border:1px solid var(--border-subtle);border-radius:var(--r-xl);padding:1.25rem; }
+.chart-title { font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary);font-family:var(--mono);margin-bottom:1.2rem; }
+.chart-bars { display:flex;align-items:flex-end;gap:8px;height:100px;padding-bottom:8px; }
+.bar-wrap { flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end; }
+.bar { width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height .4s; }
+.bar-label { font-size:9px;color:var(--text-muted);font-family:var(--mono);white-space:nowrap; }
+.bar-val { font-size:10px;color:var(--text-tertiary);font-family:var(--mono); }
+
+/* OVERLAY / MODAL */
+.overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center; }
+.overlay.open { display:flex; }
+.modal { background:var(--surface-2);border:1px solid var(--border-medium);border-radius:var(--r-xl);padding:1.75rem;width:90%;max-width:460px;animation:scaleIn .2s ease both;box-shadow:0 24px 80px rgba(0,0,0,.6); }
+.modal-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem; }
+.modal-title { font-size:16px;font-weight:800;letter-spacing:-.01em; }
+.form-group { margin-bottom:14px; }
+.form-label { display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-tertiary);font-family:var(--mono);margin-bottom:5px; }
+.form-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+input[type=text],input[type=date],input[type=number],input[type=password],select,textarea { width:100%;padding:9px 12px;font-size:13px;font-family:var(--font);font-weight:500;border-radius:var(--r-sm);border:1px solid var(--border-subtle);background:var(--surface-3);color:var(--text-primary);outline:none;transition:border-color .15s; }
+input:focus,textarea:focus { border-color:var(--border-strong);background:var(--surface-4); }
+input::placeholder { color:var(--text-muted); }
+textarea { resize:vertical;min-height:64px; }
+.modal-footer { display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border-subtle); }
+
+/* TASKS PANEL */
+.tasks-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);z-index:200; }
+.tasks-overlay.open { display:block; }
+.tasks-panel { position:fixed;top:0;right:-100%;bottom:0;width:min(520px,100vw);background:var(--surface-1);border-left:1px solid var(--border-medium);z-index:201;display:flex;flex-direction:column;transition:right .3s cubic-bezier(.4,0,.2,1);overflow:hidden; }
+.tasks-panel.open { right:0; }
+.tp-header { padding:1.5rem;border-bottom:1px solid var(--border-subtle);flex-shrink:0;background:var(--surface-2); }
+.tp-top { display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:8px; }
+.tp-title { font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.2; }
+.tp-sub { font-size:11px;color:var(--text-tertiary);font-family:var(--mono);margin-top:3px; }
+.tp-badges { display:flex;gap:6px;flex-wrap:wrap;margin-top:10px; }
+.tp-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px; }
+.tp-stat { background:var(--surface-3);border:1px solid var(--border-subtle);border-radius:var(--r-md);padding:8px 10px;text-align:center; }
+.tp-stat-val { font-size:20px;font-weight:800;font-family:var(--mono);color:var(--text-primary); }
+.tp-stat-lbl { font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-tertiary);font-family:var(--mono);margin-top:2px; }
+.tp-body { flex:1;overflow-y:auto;padding:1.25rem 1.5rem; }
+.tp-body::-webkit-scrollbar { width:4px; }
+.tp-body::-webkit-scrollbar-thumb { background:var(--border-medium);border-radius:4px; }
+.tp-footer { padding:1rem 1.5rem;border-top:1px solid var(--border-subtle);flex-shrink:0;background:var(--surface-2);display:flex;gap:8px; }
+
+.task-group { margin-bottom:1.5rem; }
+.task-group-header { display:flex;align-items:center;gap:8px;margin-bottom:8px; }
+.tg-dot { width:6px;height:6px;border-radius:50%;flex-shrink:0; }
+.tg-label { font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);flex:1; }
+.tg-count { font-size:10px;font-family:var(--mono);color:var(--text-muted);background:var(--surface-3);padding:1px 7px;border-radius:10px; }
+.task-item { display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--border-subtle);margin-bottom:6px;background:var(--surface-2);transition:border-color .15s,background .15s; }
+.task-item:hover { border-color:var(--border-medium);background:var(--surface-3); }
+.task-check { width:17px;height:17px;border-radius:5px;border:1.5px solid var(--border-medium);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--surface-0);font-weight:700;transition:all .15s; }
+.task-check.done  { background:var(--accent);border-color:var(--accent); }
+.task-check.done::after  { content:'✓'; }
+.task-check.doing { background:var(--blue);border-color:var(--blue); }
+.task-check.doing::after { content:'▶';font-size:7px; }
+.task-body { flex:1;min-width:0; }
+.task-name { font-size:13px;font-weight:600;color:var(--text-primary);line-height:1.4; }
+.task-name.done-text { text-decoration:line-through;color:var(--text-muted); }
+.task-meta { display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;align-items:center; }
+.task-meta-item { font-size:10px;font-family:var(--mono);color:var(--text-tertiary); }
+.task-meta-item.late { color:var(--red); }
+.task-actions { display:flex;gap:2px;flex-shrink:0; }
+.task-modal { background:var(--surface-2);border:1px solid var(--border-medium);border-radius:var(--r-xl);padding:1.5rem;width:90%;max-width:380px;animation:scaleIn .2s ease both;box-shadow:0 24px 80px rgba(0,0,0,.6); }
+
+/* LOGIN MODAL */
+.login-modal { background:var(--surface-2);border:1px solid var(--border-medium);border-radius:var(--r-xl);padding:2rem;width:90%;max-width:340px;animation:scaleIn .2s ease both;box-shadow:0 24px 80px rgba(0,0,0,.6);text-align:center; }
+.login-icon { font-size:32px;margin-bottom:1rem; }
+.login-title { font-size:18px;font-weight:800;margin-bottom:6px; }
+.login-sub { font-size:12px;color:var(--text-tertiary);font-family:var(--mono);margin-bottom:1.5rem; }
+.login-error { font-size:12px;color:var(--red);font-family:var(--mono);margin-top:8px;min-height:18px; }
+
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.spinning { display:inline-block; animation: spin .7s linear infinite; }
+@keyframes fadeDown { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeUp   { from{opacity:0;transform:translateY(12px)}  to{opacity:1;transform:translateY(0)} }
+@keyframes scaleIn  { from{opacity:0;transform:scale(.95)}        to{opacity:1;transform:scale(1)} }
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-thumb { background:var(--border-medium);border-radius:4px; }
+@media(max-width:600px) { .form-row{grid-template-columns:1fr} .app{padding:1.25rem 1rem 3rem} .metrics{grid-template-columns:repeat(2,1fr)} .hint-text{display:none} .charts-grid{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div>
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <span class="brand-name">Meireles</span>
+      </div>
+      <div class="page-title">Painel de Projetos</div>
+      <div class="last-update" id="last-update">— aguardando dados</div>
+    </div>
+    <div class="header-actions">
+      <span class="edit-badge" id="edit-badge">✎ Modo edição</span>
+      <button class="btn btn-ghost" onclick="loadProjects()" style="display:flex;align-items:center;gap:6px;">
+        <span id="refresh-icon">↻</span> Atualizar
+      </button>
+      <button class="btn btn-ghost" id="btn-login" onclick="openLogin()" title="Entrar como editor">🔒 Editar</button>
+      <button class="btn btn-primary" id="btn-novo" style="display:none;" onclick="openModal()">+ Novo projeto</button>
+      <button class="btn" id="btn-logout" style="display:none;" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">Total</div><div class="metric-value c-accent" id="m-total">0</div><div class="metric-sub">projetos</div></div>
+    <div class="metric"><div class="metric-label">Em andamento</div><div class="metric-value c-blue" id="m-ongoing">0</div><div class="metric-sub">ativos</div></div>
+    <div class="metric"><div class="metric-label">Concluídos</div><div class="metric-value c-accent" id="m-done">0</div><div class="metric-sub">finalizados</div></div>
+    <div class="metric"><div class="metric-label">Atrasados</div><div class="metric-value c-red" id="m-late">0</div><div class="metric-sub">atenção</div></div>
+    <div class="metric"><div class="metric-label">Progresso médio</div><div class="metric-value" id="m-avg">0%</div><div class="metric-sub">geral</div></div>
+  </div>
+
+  <div class="tabs-bar">
+    <button class="tab active" onclick="setTab('tabela',this)">Tabela</button>
+    <button class="tab" onclick="setTab('grafico',this)">Gráfico</button>
+  </div>
+
+  <div id="view-tabela">
+    <div class="filters">
+      <select id="filter-status" onchange="renderTable()">
+        <option value="">Todos os status</option>
+        <option>Em andamento</option><option>Concluído</option><option>Atrasado</option><option>Pausado</option><option>Planejamento</option>
+      </select>
+      <select id="filter-resp" onchange="renderTable()"><option value="">Todos os responsáveis</option></select>
+      <span class="hint-text">↗ clique em um projeto para ver as tasks</span>
+    </div>
+    <div class="table-wrap" id="table-container"></div>
+  </div>
+
+  <div id="view-grafico" style="display:none;">
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">Status dos projetos</div><div id="status-chart" class="chart-bars"></div></div>
+      <div class="chart-card"><div class="chart-title">Progresso por projeto</div><div id="progress-chart" class="chart-bars"></div></div>
+      <div class="chart-card"><div class="chart-title">Tasks por projeto</div><div id="tasks-chart" class="chart-bars"></div></div>
+      <div class="chart-card"><div class="chart-title">Distribuição de prioridade</div><div id="prior-chart" style="padding-top:8px;"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Login modal -->
+<div class="overlay" id="login-modal">
+  <div class="login-modal">
+    <div class="login-icon">🔐</div>
+    <div class="login-title">Modo Edição</div>
+    <div class="login-sub">Acesso restrito — somente editores</div>
+    <div class="form-group" style="text-align:left;">
+      <label class="form-label">Senha</label>
+      <input type="password" id="login-senha" placeholder="Digite a senha" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <div style="display:flex;gap:8px;margin-top:1rem;">
+      <button class="btn" style="flex:1;" onclick="closeLogin()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="doLogin()">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal projeto -->
+<div class="overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="modal-title">Novo projeto</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="form-group"><label class="form-label">Nome do projeto *</label><input type="text" id="f-nome" placeholder="Ex: Portal de Negociação"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Responsável</label><input type="text" id="f-resp" placeholder="Nome"></div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select id="f-status"><option>Em andamento</option><option>Planejamento</option><option>Pausado</option><option>Concluído</option><option>Atrasado</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Início</label><input type="date" id="f-inicio"></div>
+      <div class="form-group"><label class="form-label">Prazo</label><input type="date" id="f-prazo"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Progresso (%)</label><input type="number" id="f-prog" min="0" max="100" value="0"></div>
+      <div class="form-group"><label class="form-label">Prioridade</label>
+        <select id="f-prior"><option>Média</option><option>Alta</option><option>Baixa</option><option>Crítica</option></select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Observações</label><textarea id="f-obs" placeholder="Notas, links, detalhes..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-salvar-proj" onclick="saveProject()">Salvar projeto</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal task -->
+<div class="overlay" id="task-modal" style="z-index:300;">
+  <div class="task-modal">
+    <div class="modal-header"><div class="modal-title" id="tmodal-title">Nova task</div><button class="icon-btn" onclick="closeTaskModal()">✕</button></div>
+    <div class="form-group"><label class="form-label">Nome da task *</label><input type="text" id="tf-nome" placeholder="Ex: Levantar requisitos"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Responsável</label><input type="text" id="tf-resp" placeholder="Nome"></div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select id="tf-status"><option value="todo">A iniciar</option><option value="doing">Em andamento</option><option value="done">Concluída</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Prazo</label><input type="date" id="tf-prazo"></div>
+      <div class="form-group"><label class="form-label">Prioridade</label>
+        <select id="tf-prior"><option>Média</option><option>Alta</option><option>Baixa</option><option>Crítica</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeTaskModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveTask()">Salvar task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Painel tasks -->
+<div class="tasks-overlay" id="tasks-overlay" onclick="closeTasks()"></div>
+<div class="tasks-panel" id="tasks-panel">
+  <div class="tp-header">
+    <div class="tp-top">
+      <div><div class="tp-title" id="tp-title">—</div><div class="tp-sub" id="tp-sub">—</div></div>
+      <button class="icon-btn" onclick="closeTasks()">✕</button>
+    </div>
+    <div class="tp-badges" id="tp-badges"></div>
+    <div class="tp-stats" id="tp-stats"></div>
+  </div>
+  <div class="tp-body" id="tp-body"></div>
+  <div class="tp-footer" id="tp-footer">
+    <span style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);">⟳ sincronizado via Supabase</span>
+  </div>
+</div>
+
+<script>
+// ─── CONFIGURAÇÃO SUPABASE ────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://kgoeyiwugvrsnbryxksi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtnb2V5aXd1Z3Zyc25icnl4a3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5OTQ4MTYsImV4cCI6MjA5MjU3MDgxNn0.4n7PaS58wCsyxLjWNbP4wgRMMvNColANBl19XK063bo';
+
+// ⚠️ ALTERE ESTA SENHA para algo seguro antes de subir no GitHub
+const EDIT_PASSWORD = 'meireles2026';
+
+// ─── ESTADO ───────────────────────────────────────────────────────────────────
+let projects = [], editIndex = -1, activeProjectIdx = -1, editTaskId = null;
+let isEditor = false;
+
+// ─── API SUPABASE ─────────────────────────────────────────────────────────────
+async function sbFetch(path, options = {}) {
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...(options.headers || {})
+    }
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function loadProjects() {
+  const statusEl = document.getElementById('last-update');
+  const iconEl = document.getElementById('refresh-icon');
+  if (statusEl) statusEl.textContent = '⟳ carregando...';
+  if (iconEl) iconEl.classList.add('spinning');
+  try {
+    const data = await sbFetch('projetos?select=*&order=criado_em.asc');
+    projects = (data || []).map(row => ({
+      _id: row.id,
+      nome: row.nome,
+      resp: row.resp || '',
+      status: row.status || 'Em andamento',
+      inicio: row.inicio || '',
+      prazo: row.prazo || '',
+      prog: row.prog || 0,
+      prior: row.prior || 'Média',
+      obs: row.obs || '',
+      tasks: row.tasks || [],
+      hours: (row.tasks || []).length * 8
+    }));
+    const d = new Date();
+    if (statusEl) statusEl.textContent = '✓ Supabase · ' + d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  } catch(err) {
+    if (statusEl) statusEl.textContent = '⚠ erro ao carregar — ' + err.message;
+  }
+  if (iconEl) iconEl.classList.remove('spinning');
+  updateMetrics(); renderTable(); updateFilters(); setTimeout(renderCharts, 100);
+}
+
+async function saveProjectToDb(p, id = null) {
+  const payload = {
+    nome: p.nome, resp: p.resp, status: p.status,
+    inicio: p.inicio, prazo: p.prazo, prog: p.prog,
+    prior: p.prior, obs: p.obs, tasks: p.tasks,
+    atualizado_em: new Date().toISOString()
+  };
+  if (id) {
+    await sbFetch(`projetos?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  } else {
+    await sbFetch('projetos', { method: 'POST', body: JSON.stringify(payload) });
+  }
+  await loadProjects();
+}
+
+async function deleteProjectFromDb(id) {
+  await sbFetch(`projetos?id=eq.${id}`, { method: 'DELETE' });
+  await loadProjects();
+}
+
+// ─── AUTH (senha simples local) ───────────────────────────────────────────────
+function openLogin() {
+  document.getElementById('login-senha').value = '';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('login-modal').classList.add('open');
+  setTimeout(() => document.getElementById('login-senha').focus(), 100);
+}
+function closeLogin() { document.getElementById('login-modal').classList.remove('open'); }
+
+function doLogin() {
+  const senha = document.getElementById('login-senha').value;
+  if (senha === EDIT_PASSWORD) {
+    isEditor = true;
+    closeLogin();
+    updateEditorUI();
+  } else {
+    document.getElementById('login-error').textContent = '✕ Senha incorreta';
+    document.getElementById('login-senha').value = '';
+    document.getElementById('login-senha').focus();
+  }
+}
+
+function logout() {
+  isEditor = false;
+  updateEditorUI();
+  closeTasks();
+}
+
+function updateEditorUI() {
+  document.getElementById('edit-badge').classList.toggle('visible', isEditor);
+  document.getElementById('btn-login').style.display = isEditor ? 'none' : '';
+  document.getElementById('btn-novo').style.display = isEditor ? '' : 'none';
+  document.getElementById('btn-logout').style.display = isEditor ? '' : 'none';
+  renderTable();
+  if (activeProjectIdx >= 0) renderTaskPanel();
+}
+
+// ─── UI HELPERS ───────────────────────────────────────────────────────────────
+const statusColors = {'Em andamento':'badge-blue','Concluído':'badge-green','Atrasado':'badge-red','Pausado':'badge-gray','Planejamento':'badge-amber'};
+const priorColors  = {'Alta':'badge-amber','Crítica':'badge-red','Média':'badge-blue','Baixa':'badge-gray'};
+const progColor    = p => p>=100?'#39e87a':p>=50?'#4ab3f4':'#f5a623';
+
+function setTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); el.classList.add('active');
+  document.getElementById('view-tabela').style.display = tab==='tabela' ? '' : 'none';
+  document.getElementById('view-grafico').style.display = tab==='grafico' ? '' : 'none';
+  if (tab==='grafico') renderCharts();
+}
+
+function updateMetrics() {
+  const total=projects.length, done=projects.filter(p=>p.status==='Concluído').length,
+        late=projects.filter(p=>p.status==='Atrasado').length,
+        ongoing=projects.filter(p=>p.status==='Em andamento').length,
+        avg=total?Math.round(projects.reduce((s,p)=>s+p.prog,0)/total):0;
+  document.getElementById('m-total').textContent=total;
+  document.getElementById('m-done').textContent=done;
+  document.getElementById('m-late').textContent=late;
+  document.getElementById('m-ongoing').textContent=ongoing;
+  document.getElementById('m-avg').textContent=avg+'%';
+}
+
+function updateFilters() {
+  const rs=[...new Set(projects.map(p=>p.resp).filter(Boolean))];
+  const sel=document.getElementById('filter-resp'); const cur=sel.value;
+  sel.innerHTML='<option value="">Todos os responsáveis</option>';
+  rs.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;sel.appendChild(o);});
+  if(rs.includes(cur))sel.value=cur;
+}
+
+function renderTable() {
+  const fs=document.getElementById('filter-status').value, fr=document.getElementById('filter-resp').value;
+  const list=projects.filter(p=>(!fs||p.status===fs)&&(!fr||p.resp===fr));
+  const c=document.getElementById('table-container');
+  if(!list.length){
+    c.innerHTML='<div class="empty-state"><div class="empty-icon">🗂️</div><div class="empty-title">Nenhum projeto encontrado</div><div class="empty-sub">'+(isEditor?'Clique em "+ Novo projeto" para começar':'Sem projetos no momento')+'</div></div>';
+    return;
+  }
+  const actionsCol = isEditor ? '<th></th>' : '';
+  c.innerHTML=`<table class="project-table"><thead><tr><th>Projeto</th><th>Responsável</th><th>Status</th><th>Progresso</th><th>Prioridade</th><th>Tasks</th>${actionsCol}</tr></thead><tbody>${list.map(p=>{
+    const ri=projects.indexOf(p); const tasks=p.tasks||[]; const dt=tasks.filter(t=>t.status==='done').length;
+    const actionsCell = isEditor ? `<td onclick="event.stopPropagation()"><div class="row-actions"><button class="icon-btn" onclick="openModal(${ri})" title="Editar">✎</button><button class="icon-btn danger" onclick="deleteProject(${ri})" title="Remover">✕</button></div></td>` : '';
+    return`<tr onclick="openTasks(${ri})">
+      <td><div class="proj-name">${p.nome}</div>${p.obs?`<div class="proj-obs">${p.obs.substring(0,55)}${p.obs.length>55?'…':''}</div>`:''}</td>
+      <td style="color:var(--text-secondary);font-size:13px;">${p.resp||'<span style="color:var(--text-muted)">—</span>'}</td>
+      <td><span class="badge ${statusColors[p.status]||'badge-gray'}">${p.status}</span></td>
+      <td><div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" style="width:${p.prog}%;background:${progColor(p.prog)};"></div></div><span class="prog-lbl">${p.prog}%</span></div></td>
+      <td><span class="badge ${priorColors[p.prior]||'badge-gray'}">${p.prior}</span></td>
+      <td>${tasks.length?`<span class="tasks-chip"><span class="dot"></span>${dt}/${tasks.length}</span>`:'<span style="color:var(--text-muted);font-size:11px;font-family:var(--mono);">—</span>'}</td>
+      ${actionsCell}
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+// ─── MODAL PROJETO ────────────────────────────────────────────────────────────
+function openModal(idx=-1) {
+  if(!isEditor) return;
+  editIndex=idx;
+  if(idx>=0){
+    const p=projects[idx];
+    document.getElementById('modal-title').textContent='Editar projeto';
+    document.getElementById('f-nome').value=p.nome;
+    document.getElementById('f-resp').value=p.resp;
+    document.getElementById('f-status').value=p.status;
+    document.getElementById('f-inicio').value=p.inicio;
+    document.getElementById('f-prazo').value=p.prazo;
+    document.getElementById('f-prog').value=p.prog;
+    document.getElementById('f-prior').value=p.prior;
+    document.getElementById('f-obs').value=p.obs;
+  } else {
+    document.getElementById('modal-title').textContent='Novo projeto';
+    ['f-nome','f-resp','f-inicio','f-prazo','f-obs'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-prog').value=0;
+    document.getElementById('f-status').value='Em andamento';
+    document.getElementById('f-prior').value='Média';
+  }
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+
+async function saveProject() {
+  const nome=document.getElementById('f-nome').value.trim();
+  if(!nome){alert('Informe o nome do projeto.');return;}
+  const btn=document.getElementById('btn-salvar-proj');
+  btn.textContent='Salvando...'; btn.disabled=true;
+  const p={
+    nome, resp:document.getElementById('f-resp').value.trim(),
+    status:document.getElementById('f-status').value,
+    inicio:document.getElementById('f-inicio').value,
+    prazo:document.getElementById('f-prazo').value,
+    prog:Math.min(100,Math.max(0,parseInt(document.getElementById('f-prog').value)||0)),
+    prior:document.getElementById('f-prior').value,
+    obs:document.getElementById('f-obs').value.trim(),
+    tasks: editIndex>=0?(projects[editIndex].tasks||[]):[]
+  };
+  try {
+    const id = editIndex>=0 ? projects[editIndex]._id : null;
+    await saveProjectToDb(p, id);
+    closeModal();
+  } catch(err) { alert('Erro ao salvar: '+err.message); }
+  btn.textContent='Salvar projeto'; btn.disabled=false;
+}
+
+async function deleteProject(idx) {
+  if(!isEditor)return;
+  if(!confirm('Remover este projeto e todas as suas tasks?'))return;
+  const id=projects[idx]._id;
+  if(activeProjectIdx===idx)closeTasks();
+  try { await deleteProjectFromDb(id); }
+  catch(err){ alert('Erro: '+err.message); }
+}
+
+// ─── PAINEL DE TASKS ──────────────────────────────────────────────────────────
+function openTasks(idx) {
+  activeProjectIdx=idx; const p=projects[idx];
+  document.getElementById('tp-title').textContent=p.nome;
+  const prazoStr=p.prazo?new Date(p.prazo+'T00:00:00').toLocaleDateString('pt-BR'):null;
+  document.getElementById('tp-sub').textContent=[p.resp||null,prazoStr?`prazo ${prazoStr}`:null].filter(Boolean).join(' · ')||'Sem detalhes';
+  document.getElementById('tp-badges').innerHTML=`<span class="badge ${statusColors[p.status]||'badge-gray'}">${p.status}</span><span class="badge ${priorColors[p.prior]||'badge-gray'}">${p.prior}</span>`;
+  renderTaskPanel();
+  document.getElementById('tasks-overlay').classList.add('open');
+  document.getElementById('tasks-panel').classList.add('open');
+}
+function closeTasks(){
+  document.getElementById('tasks-overlay').classList.remove('open');
+  document.getElementById('tasks-panel').classList.remove('open');
+  activeProjectIdx=-1;
+}
+
+function renderTaskPanel() {
+  if(activeProjectIdx<0)return;
+  const p=projects[activeProjectIdx]; const tasks=p.tasks||[];
+  const todo=tasks.filter(t=>t.status==='todo').length,
+        doing=tasks.filter(t=>t.status==='doing').length,
+        done=tasks.filter(t=>t.status==='done').length;
+  document.getElementById('tp-stats').innerHTML=`
+    <div class="tp-stat"><div class="tp-stat-val" style="color:var(--text-secondary);">${todo}</div><div class="tp-stat-lbl">A iniciar</div></div>
+    <div class="tp-stat"><div class="tp-stat-val" style="color:var(--blue);">${doing}</div><div class="tp-stat-lbl">Andamento</div></div>
+    <div class="tp-stat"><div class="tp-stat-val" style="color:var(--accent);">${done}</div><div class="tp-stat-lbl">Concluídas</div></div>`;
+
+  // Footer dinâmico
+  const footer=document.getElementById('tp-footer');
+  footer.innerHTML = isEditor
+    ? `<button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="openTaskModal()">+ Nova task</button>`
+    : `<span style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);">⟳ sincronizado via Supabase</span>`;
+
+  const body=document.getElementById('tp-body');
+  if(!tasks.length){
+    body.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Nenhuma task ainda</div><div class="empty-sub">${isEditor?'Clique em "+ Nova task" para começar':'Sem tasks cadastradas'}</div></div>`;
+    return;
+  }
+  const groups=[{key:'todo',label:'A iniciar',color:'var(--text-tertiary)'},{key:'doing',label:'Em andamento',color:'var(--blue)'},{key:'done',label:'Concluída',color:'var(--accent)'}];
+  body.innerHTML=groups.map(g=>{
+    const list=tasks.filter(t=>t.status===g.key);
+    if(!list.length)return'';
+    return`<div class="task-group"><div class="task-group-header"><div class="tg-dot" style="background:${g.color};"></div><span class="tg-label" style="color:${g.color};">${g.label}</span><span class="tg-count">${list.length}</span></div>${list.map(t=>taskItemHTML(t)).join('')}</div>`;
+  }).join('')||'<div class="empty-state"><div class="empty-sub">Sem tasks.</div></div>';
+}
+
+function taskItemHTML(t) {
+  const ps=t.prazo?new Date(t.prazo+'T00:00:00').toLocaleDateString('pt-BR'):null;
+  const late=t.prazo&&new Date(t.prazo)<new Date()&&t.status!=='done';
+  const cc=t.status==='done'?'done':t.status==='doing'?'doing':'';
+  const actionsHTML = isEditor
+    ? `<div class="task-actions"><button class="icon-btn" onclick="openTaskModal('${t.id}')" title="Editar">✎</button><button class="icon-btn danger" onclick="deleteTask('${t.id}')" title="Remover">✕</button></div>`
+    : '';
+  return`<div class="task-item">
+    <div class="task-check ${cc}"></div>
+    <div class="task-body">
+      <div class="task-name ${t.status==='done'?'done-text':''}">${t.nome}</div>
+      <div class="task-meta">
+        ${t.resp?`<span class="task-meta-item">👤 ${t.resp}</span>`:''}
+        ${ps?`<span class="task-meta-item ${late?'late':''}">📅 ${ps}${late?' ⚠':''}</span>`:''}
+        ${t.prior&&t.prior!=='Média'?`<span class="badge ${priorColors[t.prior]||'badge-gray'}" style="padding:1px 6px;font-size:9px;">${t.prior}</span>`:''}
+      </div>
+    </div>
+    ${actionsHTML}
+  </div>`;
+}
+
+// ─── MODAL TASK ───────────────────────────────────────────────────────────────
+function openTaskModal(taskId=null) {
+  if(!isEditor)return;
+  editTaskId=taskId;
+  document.getElementById('tmodal-title').textContent=taskId?'Editar task':'Nova task';
+  if(taskId){
+    const t=(projects[activeProjectIdx].tasks||[]).find(t=>t.id===taskId);
+    if(!t)return;
+    document.getElementById('tf-nome').value=t.nome;
+    document.getElementById('tf-resp').value=t.resp||'';
+    document.getElementById('tf-status').value=t.status;
+    document.getElementById('tf-prazo').value=t.prazo||'';
+    document.getElementById('tf-prior').value=t.prior||'Média';
+  } else {
+    ['tf-nome','tf-resp','tf-prazo'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('tf-status').value='todo';
+    document.getElementById('tf-prior').value='Média';
+  }
+  document.getElementById('task-modal').classList.add('open');
+}
+function closeTaskModal(){ document.getElementById('task-modal').classList.remove('open'); editTaskId=null; }
+
+async function saveTask() {
+  if(!isEditor||activeProjectIdx<0)return;
+  const nome=document.getElementById('tf-nome').value.trim();
+  if(!nome){alert('Informe o nome da task.');return;}
+  const p=projects[activeProjectIdx];
+  if(!p.tasks)p.tasks=[];
+  const t={
+    id: editTaskId||('t_'+Date.now()),
+    nome, resp:document.getElementById('tf-resp').value.trim(),
+    status:document.getElementById('tf-status').value,
+    prazo:document.getElementById('tf-prazo').value,
+    prior:document.getElementById('tf-prior').value
+  };
+  if(editTaskId){ const i=p.tasks.findIndex(x=>x.id===editTaskId); if(i>=0)p.tasks[i]=t; }
+  else p.tasks.push(t);
+  autoProgress(activeProjectIdx);
+  closeTaskModal();
+  try { await saveProjectToDb(p, p._id); }
+  catch(err){ alert('Erro: '+err.message); await loadProjects(); }
+}
+
+async function deleteTask(taskId) {
+  if(!isEditor||!confirm('Remover esta task?'))return;
+  const p=projects[activeProjectIdx];
+  p.tasks=(p.tasks||[]).filter(t=>t.id!==taskId);
+  autoProgress(activeProjectIdx);
+  try { await saveProjectToDb(p, p._id); }
+  catch(err){ alert('Erro: '+err.message); await loadProjects(); }
+}
+
+function autoProgress(idx){
+  const p=projects[idx]; const tasks=p.tasks||[];
+  if(!tasks.length)return;
+  p.prog=Math.round(tasks.filter(t=>t.status==='done').length/tasks.length*100);
+}
+
+// ─── GRÁFICOS ─────────────────────────────────────────────────────────────────
+function renderCharts() {
+  const sm={}; projects.forEach(p=>{sm[p.status]=(sm[p.status]||0)+1;});
+  const sc2={'Em andamento':'#4ab3f4','Concluído':'#39e87a','Atrasado':'#e85555','Pausado':'#4d7a5e','Planejamento':'#f5a623'};
+  const sc=document.getElementById('status-chart');
+  if(!Object.keys(sm).length){sc.innerHTML='<div style="color:var(--text-muted);font-size:12px;font-family:var(--mono);">sem dados</div>';}
+  else{const mx=Math.max(...Object.values(sm));sc.innerHTML=Object.entries(sm).map(([k,v])=>`<div class="bar-wrap"><div class="bar-val">${v}</div><div class="bar" style="height:${Math.round(v/mx*80)}px;background:${sc2[k]||'#4d7a5e'};opacity:.85;"></div><div class="bar-label">${k.replace('Em andamento','Andamento').replace('Planejamento','Plan.')}</div></div>`).join('');}
+
+  const pc=document.getElementById('progress-chart');
+  const pp=[...projects].sort((a,b)=>b.prog-a.prog).slice(0,7);
+  if(!pp.length){pc.innerHTML='<div style="color:var(--text-muted);font-size:12px;font-family:var(--mono);">sem dados</div>';}
+  else{pc.innerHTML=pp.map(p=>`<div class="bar-wrap"><div class="bar-val">${p.prog}%</div><div class="bar" style="height:${Math.max(4,p.prog*.8)}px;background:${progColor(p.prog)};opacity:.85;"></div><div class="bar-label">${p.nome.substring(0,7)}${p.nome.length>7?'…':''}</div></div>`).join('');}
+
+  const tc=document.getElementById('tasks-chart');
+  const tp=[...projects].filter(p=>p.tasks&&p.tasks.length).sort((a,b)=>b.tasks.length-a.tasks.length).slice(0,7);
+  if(!tp.length){tc.innerHTML='<div style="color:var(--text-muted);font-size:12px;font-family:var(--mono);">sem dados</div>';}
+  else{
+    const mx=Math.max(...tp.map(p=>p.tasks.length));
+    tc.innerHTML=tp.map(p=>{
+      const done=p.tasks.filter(t=>t.status==='done').length,total=p.tasks.length;
+      const h=Math.round(total/mx*80),doneH=Math.round(done/total*h),restH=h-doneH;
+      return`<div class="bar-wrap"><div class="bar-val">${total}</div><div style="width:100%;height:${h}px;border-radius:4px 4px 0 0;overflow:hidden;display:flex;flex-direction:column;"><div style="height:${restH}px;background:var(--surface-4);"></div><div style="height:${doneH}px;background:#39e87a;opacity:.85;min-height:${done?2:0}px;"></div></div><div class="bar-label">${p.nome.substring(0,7)}${p.nome.length>7?'…':''}</div></div>`;
+    }).join('');
+  }
+
+  const priorColors2={'Alta':'#f5a623','Crítica':'#e85555','Média':'#4ab3f4','Baixa':'#4d7a5e'};
+  const priorCount={}; projects.forEach(p=>{priorCount[p.prior]=(priorCount[p.prior]||0)+1;});
+  const totalP=projects.length||1;
+  const priEl=document.getElementById('prior-chart');
+  if(!priEl)return;
+  priEl.innerHTML=Object.entries(priorCount).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+        <span style="font-size:12px;font-weight:600;color:${priorColors2[k]||'var(--text-secondary)'};">${k}</span>
+        <span style="font-size:11px;font-family:var(--mono);color:var(--text-tertiary);">${v} projeto${v>1?'s':''} · ${Math.round(v/totalP*100)}%</span>
+      </div>
+      <div style="height:6px;background:var(--surface-4);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${Math.round(v/totalP*100)}%;background:${priorColors2[k]||'var(--text-secondary)'};opacity:.85;border-radius:4px;transition:width .6s ease;"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+loadProjects();
+setInterval(loadProjects, 5 * 60 * 1000);
+</script>
+</body>
+</html>
