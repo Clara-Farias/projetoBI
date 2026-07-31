@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Produtos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page:#EEEDF6;
+    --surface:#FFFFFF;
+    --surface-sunken:#F4F3FA;
+    --line:#E3E1EE;
+    --line-strong:#CFCCE0;
+    --ink:#22203A;
+    --muted:#67637E;
+    --faint:#9C98B3;
+
+    --forest:#1F7A54;
+    --forest-dark:#12432E;
+    --forest-dim:#E1F1E8;
+    --gold:#C06A1F;
+    --gold-dark:#5E3410;
+    --gold-dim:#FBEADB;
+    --steel:#3D5A9E;
+    --steel-dark:#1E2C50;
+    --steel-dim:#E4E9F8;
+    --purple:#7B4FA0;
+    --purple-dark:#3D2554;
+    --purple-dim:#EFE5F5;
+    --slate:#726D8A;
+    --slate-dim:#EAE8F3;
+    --brick:#B5432B;
+    --brick-dim:#F7E3DD;
+
+    --font-display:'Fraunces',serif;
+    --font-body:'Inter',sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--page);
+    color:var(--ink);
+    font-family:var(--font-body);
+    min-height:100vh;
+    padding:28px 0 80px;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--gold-dim);color:var(--gold-dark);}
+  main{ max-width:1180px; margin:0 auto; padding:0 28px; }
+
+  /* ---------- Top bar ---------- */
+  .topbar{ max-width:1180px; margin:0 auto 20px; padding:0 28px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .brand{ display:flex; flex-direction:column; gap:2px; }
+  .brand .eyebrow{ font-family:var(--font-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .brand h1{ font-family:var(--font-display); font-size:24px; font-weight:600; }
+
+  .lock-btn{
+    font-family:var(--font-mono); font-size:12px; font-weight:500;
+    background:var(--surface); border:1px solid var(--line-strong); color:var(--muted);
+    padding:9px 16px; border-radius:99px; cursor:pointer; transition:.15s;
+    display:flex; align-items:center; gap:6px;
+  }
+  .lock-btn:hover{ border-color:var(--steel); color:var(--steel); }
+  .lock-btn.unlocked{ background:var(--forest); border-color:var(--forest); color:#fff; }
+  .lock-btn.unlocked:hover{ background:var(--forest-dark); }
+
+  /* ---------- Tabs ---------- */
+  .tab-bar{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+  .tab{
+    display:flex; align-items:center; gap:8px;
+    background:var(--surface); border:1px solid var(--line-strong); color:var(--ink);
+    font-family:var(--font-body); font-size:13.5px; font-weight:600;
+    padding:9px 16px 9px 12px; border-radius:99px; cursor:pointer; transition:.15s;
+  }
+  .tab .tab-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .tab:hover{ border-color:var(--line-strong); box-shadow:0 1px 4px rgba(34,32,58,0.08); }
+  .tab.active{ color:#fff; border-color:transparent; }
+  .tab.active .tab-dot{ background:#fff !important; }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    border-radius:16px; padding:26px 30px; margin-bottom:18px;
+    display:flex; align-items:center; gap:20px; color:#fff;
+    position:relative; overflow:hidden;
+  }
+  .hero-icon{
+    width:52px; height:52px; border-radius:14px; background:rgba(255,255,255,0.16);
+    display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;
+  }
+  .hero-text{ flex:1; min-width:200px; }
+  .hero-title{ font-family:var(--font-display); font-weight:700; font-size:clamp(20px,2.6vw,27px); letter-spacing:.01em; text-transform:uppercase; }
+  .hero-sub{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; opacity:.82; margin-top:5px; }
+  .hero-date{ text-align:right; flex-shrink:0; }
+  .hero-date-label{ font-family:var(--font-mono); font-size:10.5px; opacity:.75; text-transform:uppercase; letter-spacing:.05em; }
+  .hero-date-value{ font-family:var(--font-mono); font-size:15px; font-weight:600; margin-top:3px; }
+
+  /* ---------- Stats ---------- */
+  .stat-row{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:32px; }
+  .stat{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:14px 16px; display:flex; align-items:center; gap:14px;
+  }
+  .stat-badge{
+    width:46px; height:46px; border-radius:12px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono); font-size:13px; font-weight:600; color:#fff;
+  }
+  .stat .n{ font-family:var(--font-display); font-size:22px; font-weight:600; line-height:1; }
+  .stat .l{ font-size:11px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:.04em; }
+  @media (max-width:760px){ .stat-row{ grid-template-columns:repeat(2,1fr); } }
+
+  /* ---------- Section head ---------- */
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px; gap:12px; flex-wrap:wrap; }
+  .section-head p{ font-size:13px; color:var(--muted); }
+
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+
+  /* ---------- Card ---------- */
+  .card{ position:relative; overflow:hidden; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:22px 20px 20px; box-shadow:0 1px 2px rgba(34,32,58,0.04); transition:box-shadow .15s ease, border-color .15s ease; }
+  .card::before{ content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--card-accent, var(--slate)); }
+  .card:hover{ box-shadow:0 6px 18px rgba(34,32,58,0.09); }
+  .card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-top:2px; }
+  .card-name{ font-family:var(--font-display); font-size:18px; font-weight:600; line-height:1.3; }
+  .card-name .arrow{ color:var(--faint); font-weight:400; margin:0 5px; font-family:var(--font-body); }
+  .card-name .renamed{ color:var(--forest); }
+
+  .status-pill, .status-badge{
+    font-family:var(--font-mono); font-size:10.5px; letter-spacing:.03em; text-transform:uppercase;
+    padding:5px 10px; border-radius:99px; border:none; white-space:nowrap; font-weight:600;
+  }
+  .status-pill{ cursor:pointer; appearance:none; -webkit-appearance:none; }
+  .status-badge{ display:inline-block; }
+
+  .desc{ font-size:13.5px; color:var(--muted); line-height:1.6; margin-top:12px; min-height:18px; outline:none; border-radius:4px; padding:2px 4px; margin-left:-4px; }
+  .desc[contenteditable=true]{ cursor:text; }
+  .desc[contenteditable=true]:hover, .desc[contenteditable=true]:focus{ background:var(--surface-sunken); color:var(--ink); }
+  .desc.placeholder{ color:var(--faint); font-style:italic; }
+
+  .divider{ height:1px; background:var(--line); margin:16px 0 12px; }
+
+  .updates-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .updates-label{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); }
+  .add-btn{ background:none; border:1px solid var(--line-strong); color:var(--muted); font-size:12px; font-weight:500; padding:4px 10px; border-radius:6px; cursor:pointer; transition:.15s; }
+  .add-btn:hover{ border-color:var(--forest); color:var(--forest); }
+
+  .timeline{ display:flex; flex-direction:column; gap:10px; }
+  .update-item{ display:flex; gap:10px; font-size:13px; }
+  .update-item .date{ font-family:var(--font-mono); font-size:11px; color:var(--faint); white-space:nowrap; padding-top:2px; min-width:60px; }
+  .update-item .txt{ color:var(--ink); line-height:1.5; flex:1; outline:none; border-radius:4px; padding:1px 4px; margin-left:-4px; }
+  .update-item .txt[contenteditable=true]{ cursor:text; }
+  .update-item .txt[contenteditable=true]:hover, .update-item .txt[contenteditable=true]:focus{ background:var(--surface-sunken); }
+  .update-item .del{ background:none; border:none; color:var(--faint); cursor:pointer; font-size:14px; line-height:1; padding:2px; opacity:0; transition:.15s; }
+  .update-item:hover .del{ opacity:1; }
+  .update-item .del:hover{ color:var(--brick); }
+  .empty-updates{ font-size:12.5px; color:var(--faint); font-style:italic; }
+
+  .add-form{ display:none; margin-top:10px; gap:8px; flex-direction:column; }
+  .add-form.open{ display:flex; }
+  .add-form input[type=date], .add-form input[type=text]{ background:var(--surface-sunken); border:1px solid var(--line); color:var(--ink); font-family:var(--font-mono); font-size:12px; padding:6px 8px; border-radius:6px; width:150px; }
+  .add-form textarea{ background:var(--surface-sunken); border:1px solid var(--line); color:var(--ink); font-family:var(--font-body); font-size:13px; padding:8px 10px; border-radius:6px; resize:vertical; min-height:52px; }
+  .add-form .row{ display:flex; gap:8px; }
+  .save-btn{ background:var(--forest); color:#fff; border:none; font-weight:600; font-size:12.5px; padding:8px 16px; border-radius:8px; cursor:pointer; }
+  .save-btn:hover{ background:var(--forest-dark); }
+  .cancel-btn{ background:none; color:var(--muted); border:1px solid var(--line-strong); font-size:12.5px; padding:8px 14px; border-radius:8px; cursor:pointer; }
+
+  .lab-grid .card{ border-style:dashed; }
+
+  .card-actions{ display:flex; align-items:center; gap:6px; }
+  .icon-btn{ background:none; border:1px solid var(--line-strong); color:var(--faint); width:26px; height:26px; border-radius:6px; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; transition:.15s; flex-shrink:0; }
+  .icon-btn:hover{ border-color:var(--brick); color:var(--brick); }
+  .icon-btn.confirming{ background:var(--brick-dim); border-color:var(--brick); color:var(--brick); width:auto; padding:0 10px; font-family:var(--font-mono); font-size:11px; }
+
+  .ghost-card{ background:none; border:1.5px dashed var(--line-strong); border-radius:12px; display:flex; align-items:center; justify-content:center; min-height:80px; padding:20px; transition:.15s; cursor:pointer; }
+  .ghost-card:hover{ border-color:var(--forest); background:var(--forest-dim); }
+  .ghost-card .plus-label{ color:var(--muted); font-family:var(--font-mono); font-size:13px; display:flex; align-items:center; gap:8px; }
+  .ghost-card:hover .plus-label{ color:var(--forest); }
+  .ghost-card.open{ cursor:default; border-style:solid; background:var(--surface); box-shadow:0 1px 2px rgba(34,32,58,0.04); }
+  .ghost-card.open:hover{ border-color:var(--line-strong); background:var(--surface); }
+
+  .new-product-form{ display:none; width:100%; flex-direction:column; gap:8px; text-align:left; }
+  .new-product-form.open{ display:flex; }
+  .new-product-form input[type=text], .new-product-form select, .new-product-form textarea{ background:var(--surface-sunken); border:1px solid var(--line); color:var(--ink); font-family:var(--font-body); font-size:13px; padding:8px 10px; border-radius:6px; width:100%; }
+  .new-product-form textarea{ resize:vertical; min-height:48px; }
+  .new-product-form label{ font-family:var(--font-mono); font-size:10.5px; color:var(--faint); text-transform:uppercase; letter-spacing:.05em; margin-bottom:-4px; }
+
+  /* ---------- Próximos passos ---------- */
+  .passos-panel{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:8px 24px; }
+  .passo-row{ display:flex; align-items:center; gap:14px; padding:16px 0; border-bottom:1px solid var(--line); }
+  .passo-row:last-child{ border-bottom:none; }
+  .passo-badge{ width:30px; height:30px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:600; }
+  .passo-text{ flex:1; font-size:14.5px; outline:none; border-radius:4px; padding:2px 4px; margin-left:-4px; }
+  .passo-text[contenteditable=true]{ cursor:text; }
+  .passo-text[contenteditable=true]:hover, .passo-text[contenteditable=true]:focus{ background:var(--surface-sunken); }
+  .passo-prazo{ font-family:var(--font-mono); font-size:11.5px; color:var(--muted); white-space:nowrap; }
+  .passo-status-select{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; border:1px solid var(--line-strong); border-radius:6px; padding:4px 6px; background:var(--surface-sunken); color:var(--ink); }
+  .new-passo-row{ display:flex; gap:8px; align-items:center; padding:16px 0; }
+  .new-passo-row input[type=text]{ flex:1; background:var(--surface-sunken); border:1px solid var(--line); border-radius:6px; padding:8px 10px; font-family:var(--font-body); font-size:13.5px; color:var(--ink); }
+  .new-passo-row input[type=text].prazo-input{ flex:0 0 130px; }
+  .empty-passos{ padding:20px 0; color:var(--faint); font-style:italic; font-size:13.5px; }
+
+  footer{ max-width:1180px; margin:40px auto 0; padding:20px 28px 0; border-top:1px solid var(--line); color:var(--faint); font-size:12px; font-family:var(--font-mono); }
+  .loading-screen{ min-height:50vh; display:flex; align-items:center; justify-content:center; color:var(--muted); font-family:var(--font-mono); font-size:13px; }
+
+  /* ---------- Lock modal ---------- */
+  .lock-overlay{ display:none; position:fixed; inset:0; background:rgba(34,32,58,0.5); z-index:50; align-items:center; justify-content:center; padding:20px; }
+  .lock-overlay.open{ display:flex; }
+  .lock-box{ background:var(--surface); border-radius:16px; padding:28px; width:100%; max-width:340px; box-shadow:0 20px 50px rgba(0,0,0,0.25); }
+  .lock-title{ font-family:var(--font-display); font-size:19px; font-weight:600; margin-bottom:6px; }
+  .lock-hint{ font-size:12.5px; color:var(--muted); margin-bottom:16px; line-height:1.5; }
+  .lock-box input[type=password]{ width:100%; background:var(--surface-sunken); border:1px solid var(--line-strong); border-radius:8px; padding:10px 12px; font-size:14px; margin-bottom:8px; }
+  .lock-error{ color:var(--brick); font-size:12px; margin-bottom:10px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="eyebrow">Painel de Produtos · M&F</div>
+    <h1>Portfólio &amp; Laboratório</h1>
+  </div>
+  <button class="lock-btn" id="lockBtn" onclick="handleLockClick()">🔒 Editar</button>
+</div>
+
+<main>
+  <div class="tab-bar" id="tabBar"></div>
+  <div id="heroBox"></div>
+  <div class="stat-row" id="statRow"></div>
+  <div id="bodyContent">
+    <div class="loading-screen">Carregando painel…</div>
+  </div>
+</main>
+
+<footer>Painel de Produtos — conectado ao Supabase (painel-projetos-mf), dados compartilhados com o time em tempo real.</footer>
+
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-box">
+    <div class="lock-title">Entrar para editar</div>
+    <p class="lock-hint">A visualização continua livre para todo o time. Só quem tiver login consegue editar.</p>
+    <input type="email" id="loginEmail" placeholder="E-mail" value="clarafarias@meirelesefreitas.com.br" style="width:100%;background:var(--surface-sunken);border:1px solid var(--line-strong);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:8px;">
+    <input type="password" id="loginPassword" placeholder="Senha" onkeydown="if(event.key==='Enter')submitLogin()">
+    <div class="lock-error" id="lockError" style="display:none;">E-mail ou senha incorretos.</div>
+    <div class="row">
+      <button class="save-btn" onclick="submitLogin()">Entrar</button>
+      <button class="cancel-btn" onclick="closeLockModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://czdhbbctqqthkctswtte.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_p-dNfUF7ggSaCHs2Hsh_ew_43ZTbo-5';
+const SB_HEADERS = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json',
+};
+
+// sessão fica só em memória (não persiste ao recarregar a página —
+// é necessário logar de novo a cada visita)
+let session = null;
+
+const STATUS = {
+  'Ativo':      { color:'var(--forest)', dim:'var(--forest-dim)' },
+  'MVP':        { color:'var(--gold)',   dim:'var(--gold-dim)'   },
+  'Piloto':     { color:'var(--gold)',   dim:'var(--gold-dim)'   },
+  'Em desenvolvimento': { color:'var(--steel)', dim:'var(--steel-dim)' },
+  'Planejado':  { color:'var(--slate)', dim:'var(--slate-dim)' },
+  'Pausado':    { color:'var(--brick)', dim:'var(--brick-dim)' },
+};
+const STATUS_ORDER = Object.keys(STATUS);
+
+const TABS = {
+  portfolio: { label:'Portfólio', dot:'#1F7A54', grad:'linear-gradient(135deg, #2C8560 0%, #12432E 100%)', icon:'▦', title:'Portfólio de Produtos', sub:'Produtos em operação e desenvolvimento ativo' },
+  lab:       { label:'Laboratório', dot:'#7B4FA0', grad:'linear-gradient(135deg, #8B5CB8 0%, #3D2554 100%)', icon:'✦', title:'Laboratório de Produtos', sub:'Iniciativas em estágio inicial ou exploratório' },
+  passos:    { label:'Próximos Passos', dot:'#3D5A9E', grad:'linear-gradient(135deg, #4C6FB8 0%, #1E2C50 100%)', icon:'→', title:'Próximos Passos', sub:'Ações em andamento no portfólio' },
+};
+
+const PASSO_STATUS = {
+  em_iniciacao: { label:'A iniciar', icon:'→', color:'var(--steel)' },
+  em_execucao:  { label:'Em execução', icon:'●', color:'var(--gold)' },
+  concluido:    { label:'Concluído', icon:'✓', color:'var(--forest)' },
+};
+
+let state = {};
+let sectionOrder = { portfolio: [], lab: [] };
+let passos = [];
+let activeTab = 'portfolio';
+let editMode = false;
+
+function statusOptionsHTML(current){
+  return STATUS_ORDER.map(s => `<option value="${s}" ${s===current?'selected':''}>${s}</option>`).join('');
+}
+function formatDate(iso){
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y.slice(2)}`;
+}
+function todayFmt(){
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+
+async function sbFetch(path, options={}){
+  const authToken = session ? session.access_token : SUPABASE_KEY;
+  const headers = { apikey: SUPABASE_KEY, 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json', ...(options.headers||{}) };
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...options, headers });
+  if(!res.ok){ const errText = await res.text().catch(()=> ''); throw new Error(`Supabase ${res.status}: ${errText}`); }
+  return res.status === 204 ? null : res.json();
+}
+
+async function loadAll(){
+  const [products, updates, passosData] = await Promise.all([
+    sbFetch('produtos_portfolio?select=*&order=section.asc,ordem.asc'),
+    sbFetch('produtos_atualizacoes?select=*&order=update_date.asc'),
+    sbFetch('proximos_passos?select=*&order=ordem.asc'),
+  ]);
+  state = {}; sectionOrder = { portfolio: [], lab: [] };
+  for(const p of products){
+    state[p.slug] = { name:p.name, renamedTo:p.renamed_to, section:p.section, status:p.status, desc:p.description||'', updates:[] };
+    sectionOrder[p.section].push(p.slug);
+  }
+  for(const u of updates){
+    if(state[u.product_slug]) state[u.product_slug].updates.push({ id:u.id, date:u.update_date, text:u.texto });
+  }
+  passos = passosData.map(p=>({ id:p.id, texto:p.texto, status:p.status, prazo:p.prazo }));
+}
+
+function escapeHTML(str){
+  const d = document.createElement('div'); d.innerText = str; return d.innerHTML;
+}
+function showSyncError(e){
+  console.error(e);
+  const el = document.getElementById('bodyContent');
+  el.insertAdjacentHTML('afterbegin', `<div style="background:var(--brick-dim);border:1px solid var(--brick);color:var(--brick);padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:13px;">Não consegui salvar no Supabase agora. Tente novamente em instantes.</div>`);
+}
+
+/* ---------- Tabs & Hero ---------- */
+function renderTabBar(){
+  document.getElementById('tabBar').innerHTML = Object.entries(TABS).map(([id,t])=>`
+    <button class="tab ${id===activeTab?'active':''}" style="${id===activeTab?`background:${t.dot};`:''}" onclick="switchTab('${id}')">
+      <span class="tab-dot" style="background:${t.dot};"></span>${t.label}
+    </button>`).join('');
+}
+window.switchTab = function(id){ activeTab = id; renderAll(); };
+
+function renderHero(){
+  const t = TABS[activeTab];
+  document.getElementById('heroBox').innerHTML = `
+    <div class="hero" style="background:${t.grad};">
+      <div class="hero-icon">${t.icon}</div>
+      <div class="hero-text">
+        <div class="hero-title">${t.title}</div>
+        <div class="hero-sub">${t.sub}</div>
+      </div>
+      <div class="hero-date">
+        <div class="hero-date-label">Atualizado em</div>
+        <div class="hero-date-value">${todayFmt()}</div>
+      </div>
+    </div>`;
+}
+
+/* ---------- Stats ---------- */
+function renderStats(){
+  let stats;
+  if(activeTab === 'passos'){
+    const total = passos.length;
+    const exec = passos.filter(p=>p.status==='em_execucao').length;
+    const done = passos.filter(p=>p.status==='concluido').length;
+    const todo = passos.filter(p=>p.status==='em_iniciacao').length;
+    stats = [
+      {n:total, l:'Total de passos', c:'var(--steel)'},
+      {n:exec, l:'Em execução', c:'var(--gold)'},
+      {n:done, l:'Concluídos', c:'var(--forest)'},
+      {n:todo, l:'A iniciar', c:'var(--slate)'},
+    ];
+  } else {
+    const items = Object.values(state).filter(p=>p.section===activeTab);
+    const total = items.length;
+    const ativos = items.filter(p=>p.status==='Ativo').length;
+    const progresso = items.filter(p=>['MVP','Piloto','Em desenvolvimento'].includes(p.status)).length;
+    const planejados = items.filter(p=>p.status==='Planejado').length;
+    const accent = activeTab==='lab' ? 'var(--purple)' : 'var(--forest)';
+    stats = [
+      {n:total, l:'Produtos no total', c:accent},
+      {n:ativos, l:'Ativos', c:'var(--forest)'},
+      {n:progresso, l:'Em progresso', c:'var(--gold)'},
+      {n:planejados, l:'Planejados', c:'var(--slate)'},
+    ];
+  }
+  document.getElementById('statRow').innerHTML = stats.map(s=>`
+    <div class="stat">
+      <div class="stat-badge" style="background:${s.c};">${s.n}</div>
+      <div><div class="n">${s.n}</div><div class="l">${s.l}</div></div>
+    </div>`).join('');
+}
+
+/* ---------- Product cards ---------- */
+function cardHTML(slug){
+  const p = state[slug];
+  const st = STATUS[p.status] || STATUS['Planejado'];
+  const nameHTML = p.renamedTo ? `${p.name}<span class="arrow">→</span><span class="renamed">${p.renamedTo}</span>` : p.name;
+  const descClass = p.desc ? 'desc' : 'desc placeholder';
+  const descText = p.desc || (editMode ? 'Clique para adicionar uma descrição…' : 'Sem descrição.');
+
+  const updatesHTML = p.updates.length
+    ? p.updates.slice().reverse().map(u=>`<div class="update-item">
+          <div class="date">${formatDate(u.date)}</div>
+          <div class="txt" ${editMode?`contenteditable="true" spellcheck="false" onblur="saveUpdateText('${slug}', ${u.id}, this)"`:''}>${escapeHTML(u.text)}</div>
+          ${editMode?`<button class="del" onclick="deleteUpdate('${slug}', ${u.id})" title="Remover">✕</button>`:''}
+        </div>`).join('')
+    : `<div class="empty-updates">Nenhuma atualização registrada ainda.</div>`;
+
+  const statusControl = editMode
+    ? `<select class="status-pill" style="background-color:${st.dim};color:${st.color};" onchange="changeStatus('${slug}', this.value)">${statusOptionsHTML(p.status)}</select>`
+    : `<span class="status-badge" style="background-color:${st.dim};color:${st.color};">${p.status}</span>`;
+
+  return `
+  <div class="card" id="card-${slug}" style="--card-accent:${st.color};">
+    <div class="card-top">
+      <div class="card-name">${nameHTML}</div>
+      <div class="card-actions">
+        ${statusControl}
+        ${editMode?`<button class="icon-btn" id="delbtn-${slug}" onclick="deleteProduct('${slug}')" title="Excluir produto">🗑</button>`:''}
+      </div>
+    </div>
+    <div class="${descClass}" ${editMode?`contenteditable="true" spellcheck="false" onblur="saveDescription('${slug}', this)" onfocus="clearPlaceholder(this)"`:''}>${escapeHTML(descText)}</div>
+    <div class="divider"></div>
+    <div class="updates-head">
+      <span class="updates-label">Atualizações</span>
+      ${editMode?`<button class="add-btn" onclick="toggleForm('${slug}')">+ Nova</button>`:''}
+    </div>
+    <div class="timeline">${updatesHTML}</div>
+    ${editMode?`<div class="add-form" id="form-${slug}">
+      <input type="date" id="date-${slug}" value="${new Date().toISOString().slice(0,10)}">
+      <textarea id="text-${slug}" placeholder="O que mudou nesse produto?"></textarea>
+      <div class="row">
+        <button class="save-btn" onclick="addUpdate('${slug}')">Salvar</button>
+        <button class="cancel-btn" onclick="toggleForm('${slug}')">Cancelar</button>
+      </div>
+    </div>`:''}
+  </div>`;
+}
+
+function ghostCardHTML(section){
+  return `
+  <div class="ghost-card" id="ghost-${section}" onclick="toggleNewProductForm('${section}', event)">
+    <div class="plus-label" id="ghost-label-${section}">+ Novo produto</div>
+    <div class="new-product-form" id="new-form-${section}">
+      <label>Nome</label>
+      <input type="text" id="new-name-${section}" placeholder="Ex: Pulse bot">
+      <label>Virou / renomeado para (opcional)</label>
+      <input type="text" id="new-renamed-${section}" placeholder="Deixe em branco se não houver">
+      <label>Status</label>
+      <select id="new-status-${section}">${statusOptionsHTML('Planejado')}</select>
+      <label>Descrição (opcional)</label>
+      <textarea id="new-desc-${section}" placeholder="O que é esse produto?"></textarea>
+      <div class="row">
+        <button class="save-btn" onclick="saveNewProduct('${section}', event)">Criar produto</button>
+        <button class="cancel-btn" onclick="toggleNewProductForm('${section}', event)">Cancelar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderProductGrid(){
+  const slugs = sectionOrder[activeTab] || [];
+  return `
+    <div class="section-head">
+      <p>${slugs.length} produto${slugs.length===1?'':'s'} nesta seção</p>
+    </div>
+    <div class="grid ${activeTab==='lab'?'lab-grid':''}">
+      ${slugs.map(slug=>cardHTML(slug)).join('')}
+      ${editMode ? ghostCardHTML(activeTab) : ''}
+    </div>`;
+}
+
+/* ---------- Próximos passos ---------- */
+function passoRowHTML(p){
+  const st = PASSO_STATUS[p.status] || PASSO_STATUS.em_iniciacao;
+  if(!editMode){
+    return `<div class="passo-row">
+      <div class="passo-badge" style="background:${st.color};">${st.icon}</div>
+      <div class="passo-text">${escapeHTML(p.texto)}</div>
+      ${p.prazo?`<div class="passo-prazo">${escapeHTML(p.prazo)}</div>`:''}
+    </div>`;
+  }
+  return `<div class="passo-row">
+    <div class="passo-badge" style="background:${st.color};">${st.icon}</div>
+    <div class="passo-text" contenteditable="true" spellcheck="false" onblur="savePassoText(${p.id}, this)">${escapeHTML(p.texto)}</div>
+    <input type="text" class="passo-prazo" style="width:110px;border:1px solid var(--line);border-radius:6px;padding:5px 8px;" placeholder="prazo" value="${escapeHTML(p.prazo||'')}" onchange="savePassoPrazo(${p.id}, this.value)">
+    <select class="passo-status-select" onchange="savePassoStatus(${p.id}, this.value)">
+      ${Object.entries(PASSO_STATUS).map(([k,v])=>`<option value="${k}" ${k===p.status?'selected':''}>${v.label}</option>`).join('')}
+    </select>
+    <button class="icon-btn" onclick="deletePasso(${p.id})" title="Remover">✕</button>
+  </div>`;
+}
+
+function renderPassos(){
+  const rows = passos.length ? passos.map(passoRowHTML).join('') : `<div class="empty-passos">Nenhum passo registrado ainda.</div>`;
+  const addRow = editMode ? `
+    <div class="new-passo-row">
+      <input type="text" id="new-passo-texto" placeholder="Descreva o próximo passo…">
+      <input type="text" class="prazo-input" id="new-passo-prazo" placeholder="Prazo (opcional)">
+      <button class="save-btn" onclick="addPasso()">Adicionar</button>
+    </div>` : '';
+  return `<div class="passos-panel">${rows}${addRow}</div>`;
+}
+
+/* ---------- Render orchestration ---------- */
+function renderAll(){
+  renderTabBar();
+  renderHero();
+  renderStats();
+  document.getElementById('bodyContent').innerHTML = activeTab === 'passos' ? renderPassos() : renderProductGrid();
+}
+
+/* ---------- Lock / unlock ---------- */
+window.handleLockClick = function(){
+  if(session){ session = null; editMode = false; updateLockButton(); renderAll(); return; }
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('lockError').style.display = 'none';
+  document.getElementById('lockOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('loginPassword').focus(), 50);
+};
+window.closeLockModal = function(){ document.getElementById('lockOverlay').classList.remove('open'); };
+window.submitLogin = async function(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('lockError');
+  errEl.style.display = 'none';
+  try{
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method:'POST',
+      headers:{ apikey: SUPABASE_KEY, 'Content-Type':'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if(!res.ok) throw new Error('login failed');
+    session = await res.json();
+    editMode = true;
+    closeLockModal(); updateLockButton(); renderAll();
+  }catch(e){
+    errEl.style.display = 'block';
+  }
+};
+function updateLockButton(){
+  const btn = document.getElementById('lockBtn');
+  btn.classList.toggle('unlocked', !!session);
+  btn.innerText = session ? `🔓 ${session.user.email.split('@')[0]} · Sair` : '🔒 Editar';
+}
+
+/* ---------- Product interactions ---------- */
+window.changeStatus = async function(slug, value){
+  const prev = state[slug].status; state[slug].status = value; renderAll();
+  try{ await sbFetch(`produtos_portfolio?slug=eq.${slug}`, { method:'PATCH', body: JSON.stringify({ status:value, updated_at:new Date().toISOString() }) }); }
+  catch(e){ state[slug].status = prev; renderAll(); showSyncError(e); }
+};
+window.clearPlaceholder = function(el){ if(el.classList.contains('placeholder')){ el.innerText=''; el.classList.remove('placeholder'); } };
+window.saveDescription = async function(slug, el){
+  const text = el.innerText.trim(); state[slug].desc = text;
+  if(!text){ el.innerText = 'Clique para adicionar uma descrição…'; el.classList.add('placeholder'); }
+  try{ await sbFetch(`produtos_portfolio?slug=eq.${slug}`, { method:'PATCH', body: JSON.stringify({ description:text, updated_at:new Date().toISOString() }) }); }
+  catch(e){ showSyncError(e); }
+};
+window.toggleForm = function(slug){ document.getElementById(`form-${slug}`).classList.toggle('open'); };
+window.addUpdate = async function(slug){
+  const dateEl = document.getElementById(`date-${slug}`); const textEl = document.getElementById(`text-${slug}`);
+  const text = textEl.value.trim(); if(!text) return;
+  try{
+    const rows = await sbFetch('produtos_atualizacoes', { method:'POST', headers:{'Prefer':'return=representation'}, body: JSON.stringify({ product_slug:slug, update_date:dateEl.value, texto:text }) });
+    state[slug].updates.push({ id:rows[0].id, date:rows[0].update_date, text:rows[0].texto }); renderAll();
+  }catch(e){ showSyncError(e); }
+};
+window.deleteUpdate = async function(slug, id){
+  const backup = state[slug].updates.slice(); state[slug].updates = state[slug].updates.filter(u=>u.id!==id); renderAll();
+  try{ await sbFetch(`produtos_atualizacoes?id=eq.${id}`, { method:'DELETE' }); }
+  catch(e){ state[slug].updates = backup; renderAll(); showSyncError(e); }
+};
+window.saveUpdateText = async function(slug, id, el){
+  const text = el.innerText.trim(); if(!text) return;
+  const u = state[slug].updates.find(x=>x.id===id); if(u) u.text = text;
+  try{ await sbFetch(`produtos_atualizacoes?id=eq.${id}`, { method:'PATCH', body: JSON.stringify({ texto:text }) }); }
+  catch(e){ showSyncError(e); }
+};
+function slugify(str){
+  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || `produto-${Date.now()}`;
+}
+window.toggleNewProductForm = function(section, ev){
+  if(ev) ev.stopPropagation();
+  const ghost = document.getElementById(`ghost-${section}`); const form = document.getElementById(`new-form-${section}`); const label = document.getElementById(`ghost-label-${section}`);
+  const opening = !form.classList.contains('open');
+  form.classList.toggle('open', opening); ghost.classList.toggle('open', opening); label.style.display = opening ? 'none' : 'flex';
+};
+window.saveNewProduct = async function(section, ev){
+  if(ev) ev.stopPropagation();
+  const name = document.getElementById(`new-name-${section}`).value.trim();
+  const renamed = document.getElementById(`new-renamed-${section}`).value.trim();
+  const status = document.getElementById(`new-status-${section}`).value;
+  const desc = document.getElementById(`new-desc-${section}`).value.trim();
+  if(!name) return;
+  let slug = slugify(name); if(state[slug]) slug = `${slug}-${Date.now().toString().slice(-4)}`;
+  const ordem = (sectionOrder[section]?.length || 0) + 1;
+  try{
+    await sbFetch('produtos_portfolio', { method:'POST', headers:{'Prefer':'return=minimal'}, body: JSON.stringify({ slug, name, renamed_to: renamed||null, section, status, description: desc, ordem }) });
+    state[slug] = { name, renamedTo: renamed||null, section, status, desc, updates: [] };
+    sectionOrder[section].push(slug); renderAll();
+  }catch(e){ showSyncError(e); }
+};
+window.deleteProduct = async function(slug){
+  const btn = document.getElementById(`delbtn-${slug}`); if(!btn) return;
+  if(!btn.classList.contains('confirming')){
+    btn.classList.add('confirming'); btn.innerText = 'Excluir?';
+    btn.onclick = (e)=>{ e.stopPropagation(); confirmDeleteProduct(slug); };
+    setTimeout(()=>{ if(btn.classList.contains('confirming')){ btn.classList.remove('confirming'); btn.innerText='🗑'; btn.onclick=()=>window.deleteProduct(slug); } }, 3000);
+  }
+};
+async function confirmDeleteProduct(slug){
+  const backupState = state[slug]; const backupOrder = sectionOrder[backupState.section].slice();
+  delete state[slug]; sectionOrder[backupState.section] = sectionOrder[backupState.section].filter(s=>s!==slug); renderAll();
+  try{ await sbFetch(`produtos_portfolio?slug=eq.${slug}`, { method:'DELETE' }); }
+  catch(e){ state[slug]=backupState; sectionOrder[backupState.section]=backupOrder; renderAll(); showSyncError(e); }
+}
+
+/* ---------- Próximos passos interactions ---------- */
+window.addPasso = async function(){
+  const textoEl = document.getElementById('new-passo-texto'); const prazoEl = document.getElementById('new-passo-prazo');
+  const texto = textoEl.value.trim(); if(!texto) return;
+  const prazo = prazoEl.value.trim();
+  const ordem = passos.length + 1;
+  try{
+    const rows = await sbFetch('proximos_passos', { method:'POST', headers:{'Prefer':'return=representation'}, body: JSON.stringify({ texto, prazo: prazo||null, status:'em_iniciacao', ordem }) });
+    passos.push({ id:rows[0].id, texto:rows[0].texto, status:rows[0].status, prazo:rows[0].prazo }); renderAll();
+  }catch(e){ showSyncError(e); }
+};
+window.deletePasso = async function(id){
+  const backup = passos.slice(); passos = passos.filter(p=>p.id!==id); renderAll();
+  try{ await sbFetch(`proximos_passos?id=eq.${id}`, { method:'DELETE' }); }
+  catch(e){ passos = backup; renderAll(); showSyncError(e); }
+};
+window.savePassoText = async function(id, el){
+  const text = el.innerText.trim(); if(!text) return;
+  const p = passos.find(x=>x.id===id); if(p) p.texto = text;
+  try{ await sbFetch(`proximos_passos?id=eq.${id}`, { method:'PATCH', body: JSON.stringify({ texto:text }) }); }
+  catch(e){ showSyncError(e); }
+};
+window.savePassoStatus = async function(id, value){
+  const p = passos.find(x=>x.id===id); const prev = p.status; p.status = value; renderAll();
+  try{ await sbFetch(`proximos_passos?id=eq.${id}`, { method:'PATCH', body: JSON.stringify({ status:value }) }); }
+  catch(e){ p.status = prev; renderAll(); showSyncError(e); }
+};
+window.savePassoPrazo = async function(id, value){
+  const p = passos.find(x=>x.id===id); if(p) p.prazo = value;
+  try{ await sbFetch(`proximos_passos?id=eq.${id}`, { method:'PATCH', body: JSON.stringify({ prazo:value||null }) }); }
+  catch(e){ showSyncError(e); }
+};
+
+/* ---------- Init ---------- */
+(async function init(){
+  try{ await loadAll(); renderAll(); }
+  catch(e){
+    document.getElementById('bodyContent').innerHTML = `<div style="padding:40px;color:var(--brick);font-family:var(--font-mono);font-size:13px;">Não consegui carregar os dados do Supabase. Verifique a conexão e recarregue a página.<br><br>${e.message}</div>`;
+  }
+})();
+</script>
+</body>
+</html>
