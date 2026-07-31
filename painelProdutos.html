@@ -201,6 +201,21 @@
   .new-passo-row input[type=text].prazo-input{ flex:0 0 130px; }
   .empty-passos{ padding:20px 0; color:var(--faint); font-style:italic; font-size:13.5px; }
 
+  /* ---------- Monday kanban ---------- */
+  .monday-sync-note{ font-family:var(--font-mono); font-size:11.5px; color:var(--muted); margin-bottom:16px; }
+  .monday-sync-note a{ color:var(--steel); }
+  .monday-kanban{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+  @media (max-width:820px){ .monday-kanban{ grid-template-columns:1fr; } }
+  .monday-col{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .monday-col-head{ display:flex; align-items:center; gap:8px; font-weight:600; font-size:13.5px; margin-bottom:14px; }
+  .monday-col-dot{ width:8px; height:8px; border-radius:50%; }
+  .monday-col-count{ margin-left:auto; font-family:var(--font-mono); font-size:11.5px; color:var(--faint); }
+  .monday-col-body{ display:flex; flex-direction:column; gap:8px; }
+  .monday-card{ display:flex; flex-direction:column; gap:6px; background:var(--surface-sunken); border:1px solid var(--line); border-radius:8px; padding:10px 12px; text-decoration:none; transition:.15s; }
+  .monday-card:hover{ border-color:var(--line-strong); box-shadow:0 2px 8px rgba(34,32,58,0.06); }
+  .monday-tag{ align-self:flex-start; font-family:var(--font-mono); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; padding:2px 8px; border-radius:99px; }
+  .monday-title{ font-size:13px; color:var(--ink); line-height:1.4; }
+
   footer{ max-width:1180px; margin:40px auto 0; padding:20px 28px 0; border-top:1px solid var(--line); color:var(--faint); font-size:12px; font-family:var(--font-mono); }
   .loading-screen{ min-height:50vh; display:flex; align-items:center; justify-content:center; color:var(--muted); font-family:var(--font-mono); font-size:13px; }
 
@@ -267,7 +282,7 @@ const STATUS = {
   'MVP':        { color:'var(--gold)',   dim:'var(--gold-dim)'   },
   'Piloto':     { color:'var(--gold)',   dim:'var(--gold-dim)'   },
   'Em desenvolvimento': { color:'var(--steel)', dim:'var(--steel-dim)' },
-  'Planejado':  { color:'var(--slate)', dim:'var(--slate-dim)' },
+  'Em planejamento':  { color:'var(--slate)', dim:'var(--slate-dim)' },
   'Pausado':    { color:'var(--brick)', dim:'var(--brick-dim)' },
 };
 const STATUS_ORDER = Object.keys(STATUS);
@@ -276,7 +291,18 @@ const TABS = {
   portfolio: { label:'Portfólio', dot:'#1F7A54', grad:'linear-gradient(135deg, #2C8560 0%, #12432E 100%)', icon:'▦', title:'Portfólio de Produtos', sub:'Produtos em operação e desenvolvimento ativo' },
   lab:       { label:'Laboratório', dot:'#7B4FA0', grad:'linear-gradient(135deg, #8B5CB8 0%, #3D2554 100%)', icon:'✦', title:'Laboratório de Produtos', sub:'Iniciativas em estágio inicial ou exploratório' },
   passos:    { label:'Próximos Passos', dot:'#3D5A9E', grad:'linear-gradient(135deg, #4C6FB8 0%, #1E2C50 100%)', icon:'→', title:'Próximos Passos', sub:'Ações em andamento no portfólio' },
+  monday:    { label:'Monday', dot:'#DE5A34', grad:'linear-gradient(135deg, #E8683F 0%, #7A2E14 100%)', icon:'◷', title:'Atividades no Monday', sub:'O que a Clara está trabalhando agora' },
 };
+
+const PROJETO_COLORS = {
+  'Benchmark': { c:'var(--steel)', d:'var(--steel-dim)' },
+  'Gerador de Assinaturas': { c:'var(--gold)', d:'var(--gold-dim)' },
+  'MIRA': { c:'var(--purple)', d:'var(--purple-dim)' },
+  'IACOB': { c:'var(--forest)', d:'var(--forest-dim)' },
+  'Oficina': { c:'var(--brick)', d:'var(--brick-dim)' },
+};
+const GRUPO_ORDER = ['A Fazer', 'Em andamento', 'Feito'];
+const GRUPO_COLOR = { 'A Fazer':'var(--slate)', 'Em andamento':'var(--gold)', 'Feito':'var(--forest)' };
 
 const PASSO_STATUS = {
   em_iniciacao: { label:'A iniciar', icon:'→', color:'var(--steel)' },
@@ -287,6 +313,7 @@ const PASSO_STATUS = {
 let state = {};
 let sectionOrder = { portfolio: [], lab: [] };
 let passos = [];
+let mondayItems = [];
 let activeTab = 'portfolio';
 let editMode = false;
 
@@ -311,10 +338,11 @@ async function sbFetch(path, options={}){
 }
 
 async function loadAll(){
-  const [products, updates, passosData] = await Promise.all([
+  const [products, updates, passosData, mondayData] = await Promise.all([
     sbFetch('produtos_portfolio?select=*&order=section.asc,ordem.asc'),
     sbFetch('produtos_atualizacoes?select=*&order=update_date.asc'),
     sbFetch('proximos_passos?select=*&order=ordem.asc'),
+    sbFetch('monday_atividades?select=*&order=sincronizado_em.desc'),
   ]);
   state = {}; sectionOrder = { portfolio: [], lab: [] };
   for(const p of products){
@@ -325,6 +353,7 @@ async function loadAll(){
     if(state[u.product_slug]) state[u.product_slug].updates.push({ id:u.id, date:u.update_date, text:u.texto });
   }
   passos = passosData.map(p=>({ id:p.id, texto:p.texto, status:p.status, prazo:p.prazo }));
+  mondayItems = mondayData.map(m=>({ id:m.id, titulo:m.titulo, projeto:m.projeto, grupo:m.grupo, url:m.url, sync:m.sincronizado_em }));
 }
 
 function escapeHTML(str){
@@ -375,12 +404,23 @@ function renderStats(){
       {n:done, l:'Concluídos', c:'var(--forest)'},
       {n:todo, l:'A iniciar', c:'var(--slate)'},
     ];
+  } else if(activeTab === 'monday'){
+    const total = mondayItems.length;
+    const doing = mondayItems.filter(m=>m.grupo==='Em andamento').length;
+    const todo = mondayItems.filter(m=>m.grupo==='A Fazer').length;
+    const done = mondayItems.filter(m=>m.grupo==='Feito').length;
+    stats = [
+      {n:total, l:'Total de itens', c:'var(--steel)'},
+      {n:doing, l:'Em andamento', c:'var(--gold)'},
+      {n:todo, l:'A fazer', c:'var(--slate)'},
+      {n:done, l:'Concluídos', c:'var(--forest)'},
+    ];
   } else {
     const items = Object.values(state).filter(p=>p.section===activeTab);
     const total = items.length;
     const ativos = items.filter(p=>p.status==='Ativo').length;
     const progresso = items.filter(p=>['MVP','Piloto','Em desenvolvimento'].includes(p.status)).length;
-    const planejados = items.filter(p=>p.status==='Planejado').length;
+    const planejados = items.filter(p=>p.status==='Em planejamento').length;
     const accent = activeTab==='lab' ? 'var(--purple)' : 'var(--forest)';
     stats = [
       {n:total, l:'Produtos no total', c:accent},
@@ -399,7 +439,7 @@ function renderStats(){
 /* ---------- Product cards ---------- */
 function cardHTML(slug){
   const p = state[slug];
-  const st = STATUS[p.status] || STATUS['Planejado'];
+  const st = STATUS[p.status] || STATUS['Em planejamento'];
   const nameHTML = p.renamedTo ? `${p.name}<span class="arrow">→</span><span class="renamed">${p.renamedTo}</span>` : p.name;
   const descClass = p.desc ? 'desc' : 'desc placeholder';
   const descText = p.desc || (editMode ? 'Clique para adicionar uma descrição…' : 'Sem descrição.');
@@ -453,7 +493,7 @@ function ghostCardHTML(section){
       <label>Virou / renomeado para (opcional)</label>
       <input type="text" id="new-renamed-${section}" placeholder="Deixe em branco se não houver">
       <label>Status</label>
-      <select id="new-status-${section}">${statusOptionsHTML('Planejado')}</select>
+      <select id="new-status-${section}">${statusOptionsHTML('Em planejamento')}</select>
       <label>Descrição (opcional)</label>
       <textarea id="new-desc-${section}" placeholder="O que é esse produto?"></textarea>
       <div class="row">
@@ -508,12 +548,48 @@ function renderPassos(){
   return `<div class="passos-panel">${rows}${addRow}</div>`;
 }
 
+function mondayCardHTML(item){
+  const pc = PROJETO_COLORS[item.projeto] || { c:'var(--slate)', d:'var(--slate-dim)' };
+  return `<a class="monday-card" href="${item.url}" target="_blank" rel="noopener">
+    <span class="monday-tag" style="background:${pc.d};color:${pc.c};">${escapeHTML(item.projeto||'—')}</span>
+    <span class="monday-title">${escapeHTML(item.titulo)}</span>
+  </a>`;
+}
+
+function renderMonday(){
+  if(!mondayItems.length){
+    return `<div class="passos-panel"><div class="empty-passos">Nenhuma atividade sincronizada ainda.</div></div>`;
+  }
+  const lastSync = mondayItems.reduce((max,m)=> m.sync>max?m.sync:max, mondayItems[0].sync);
+  const syncDate = new Date(lastSync);
+  const syncFmt = `${String(syncDate.getDate()).padStart(2,'0')}/${String(syncDate.getMonth()+1).padStart(2,'0')} às ${String(syncDate.getHours()).padStart(2,'0')}:${String(syncDate.getMinutes()).padStart(2,'0')}`;
+  const cols = GRUPO_ORDER.map(g=>{
+    const items = mondayItems.filter(m=>m.grupo===g);
+    return `<div class="monday-col">
+      <div class="monday-col-head" style="color:${GRUPO_COLOR[g]};">
+        <span class="monday-col-dot" style="background:${GRUPO_COLOR[g]};"></span>${g}
+        <span class="monday-col-count">${items.length}</span>
+      </div>
+      <div class="monday-col-body">
+        ${items.length ? items.map(mondayCardHTML).join('') : '<div class="empty-passos">Vazio</div>'}
+      </div>
+    </div>`;
+  }).join('');
+  return `
+    <div class="monday-sync-note">Sincronizado do Monday.com em ${syncFmt} · <a href="https://alldesk-team.monday.com/boards/18423362688" target="_blank" rel="noopener">abrir board</a> · atualiza sozinho a cada hora</div>
+    <div class="monday-kanban">${cols}</div>`;
+}
+
 /* ---------- Render orchestration ---------- */
 function renderAll(){
   renderTabBar();
   renderHero();
   renderStats();
-  document.getElementById('bodyContent').innerHTML = activeTab === 'passos' ? renderPassos() : renderProductGrid();
+  let body;
+  if(activeTab === 'passos') body = renderPassos();
+  else if(activeTab === 'monday') body = renderMonday();
+  else body = renderProductGrid();
+  document.getElementById('bodyContent').innerHTML = body;
 }
 
 /* ---------- Lock / unlock ---------- */
