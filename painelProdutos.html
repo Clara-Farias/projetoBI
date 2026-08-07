@@ -327,7 +327,7 @@
 <div class="lock-overlay" id="lockOverlay">
   <div class="lock-box">
     <div class="lock-title">Entrar para editar</div>
-    <p class="lock-hint">A visualização continua livre para todo o time. Só quem tiver login consegue editar.</p>
+    <p class="lock-hint" id="lockHint">A visualização continua livre para todo o time. Só quem tiver login consegue editar.</p>
     <input type="email" id="loginEmail" placeholder="E-mail" value="clarafarias@meirelesefreitas.com.br" style="width:100%;background:var(--surface-sunken);border:1px solid var(--line-strong);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:8px;">
     <input type="password" id="loginPassword" placeholder="Senha" onkeydown="if(event.key==='Enter')submitLogin()">
     <div class="lock-error" id="lockError" style="display:none;">E-mail ou senha incorretos.</div>
@@ -406,10 +406,31 @@ function todayFmt(){
   return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 }
 
-async function sbFetch(path, options={}){
+async function refreshSession(){
+  if(!session || !session.refresh_token) return false;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method:'POST',
+      headers:{ apikey: SUPABASE_KEY, 'Content-Type':'application/json' },
+      body: JSON.stringify({ refresh_token: session.refresh_token }),
+    });
+    if(!res.ok) return false;
+    session = await res.json();
+    return true;
+  }catch(e){ return false; }
+}
+
+async function sbFetch(path, options={}, isRetry){
   const authToken = session ? session.access_token : SUPABASE_KEY;
   const headers = { apikey: SUPABASE_KEY, 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json', ...(options.headers||{}) };
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...options, headers });
+  if(res.status === 401 && session && !isRetry){
+    const refreshed = await refreshSession();
+    if(refreshed) return sbFetch(path, options, true);
+    session = null; editMode = false; updateLockButton(); renderAll();
+    openLockModal('Sua sessão expirou. Faça login de novo pra continuar editando — o que você tentou salvar não foi perdido, é só tentar de novo depois de entrar.');
+    throw new Error('Sessão expirada — faça login novamente.');
+  }
   if(!res.ok){ const errText = await res.text().catch(()=> ''); throw new Error(`Supabase ${res.status}: ${errText}`); }
   return res.status === 204 ? null : res.json();
 }
@@ -939,12 +960,16 @@ function renderAll(){
 }
 
 /* ---------- Lock / unlock ---------- */
-window.handleLockClick = function(){
-  if(session){ session = null; editMode = false; updateLockButton(); renderAll(); return; }
+window.openLockModal = function(message){
   document.getElementById('loginPassword').value = '';
   document.getElementById('lockError').style.display = 'none';
+  document.getElementById('lockHint').innerText = message || 'A visualização continua livre para todo o time. Só quem tiver login consegue editar.';
   document.getElementById('lockOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('loginPassword').focus(), 50);
+};
+window.handleLockClick = function(){
+  if(session){ session = null; editMode = false; updateLockButton(); renderAll(); return; }
+  openLockModal();
 };
 window.closeLockModal = function(){ document.getElementById('lockOverlay').classList.remove('open'); };
 window.submitLogin = async function(){
