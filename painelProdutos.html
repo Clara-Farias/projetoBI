@@ -610,8 +610,8 @@ function cardHTML(slug){
 
 function ghostCardHTML(section){
   return `
-  <div class="ghost-card" id="ghost-${section}" onclick="toggleNewProductForm('${section}', event)">
-    <div class="plus-label" id="ghost-label-${section}">+ Novo produto</div>
+  <div class="ghost-card" id="ghost-${section}">
+    <div class="plus-label" id="ghost-label-${section}" onclick="toggleNewProductForm('${section}', event)">+ Novo produto</div>
     <div class="new-product-form" id="new-form-${section}">
       <label>Nome</label>
       <input type="text" id="new-name-${section}" placeholder="Ex: Pulse bot">
