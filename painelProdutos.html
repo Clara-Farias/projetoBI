@@ -287,13 +287,16 @@
   .rp-passo:last-child{ border-bottom:none; }
   .rp-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:8px; }
   .rp-date{ float:right; font-family:var(--font-mono); font-size:10px; color:var(--muted); }
-  .rp-mon-table{ display:flex; gap:12px; }
-  .rp-mon-col{ flex:1; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:10px; page-break-inside:avoid; }
-  .rp-mon-head{ font-size:12px; font-weight:700; margin-bottom:8px; }
-  .rp-mon-count{ float:right; font-family:var(--font-mono); color:var(--faint); font-weight:400; }
-  .rp-mon-card{ background:var(--surface-sunken); border:1px solid var(--line); border-radius:6px; padding:6px 8px; margin-bottom:6px; page-break-inside:avoid; }
-  .rp-mon-tag{ display:inline-block; font-family:var(--font-mono); font-size:8px; text-transform:uppercase; padding:2px 6px; border-radius:20px; margin-bottom:4px; font-weight:700; }
-  .rp-mon-title{ font-size:9.5px; line-height:1.4; }
+  .rp-mon-groups{ display:flex; flex-direction:column; gap:14px; }
+  .rp-mon-group{ border-left:3px solid; padding-left:14px; page-break-inside:avoid; }
+  .rp-mon-group-head{ font-family:var(--font-display); font-size:13px; font-weight:700; margin-bottom:6px; }
+  .rp-mon-group-count{ font-family:var(--font-mono); font-size:10.5px; color:var(--faint); font-weight:400; }
+  .rp-mon-table2{ width:100%; border-collapse:collapse; }
+  .rp-mon-table2 tr{ border-bottom:1px solid var(--line); }
+  .rp-mon-table2 tr:last-child{ border-bottom:none; }
+  .rp-mon-td-status{ padding:6px 10px 6px 0; white-space:nowrap; width:110px; vertical-align:top; }
+  .rp-mon-status-tag{ display:inline-block; font-family:var(--font-mono); font-size:8.5px; text-transform:uppercase; letter-spacing:.03em; padding:3px 8px; border-radius:20px; font-weight:700; }
+  .rp-mon-td-title{ padding:6px 0; font-size:11px; line-height:1.4; }
   .rp-footer{ margin-top:24px; padding-top:10px; border-top:1px solid var(--line); font-family:var(--font-mono); font-size:9px; color:var(--faint); }
 </style>
 </head>
@@ -863,17 +866,25 @@ function buildFullReportHTML(){
     label:proj, value:mondayFiltered.filter(m=>m.projeto===proj).length, color:(PROJETO_COLORS[proj]||{c:'var(--slate)'}).c,
   })).filter(s=>s.value>0);
 
-  const mondayCols = GRUPO_ORDER.map(g=>{
-    const items = mondayFiltered.filter(m=>m.grupo===g);
-    const cards = items.map(m=>{
-      const pc = PROJETO_COLORS[m.projeto] || { c:'var(--slate)', d:'var(--slate-dim)' };
-      return `<div class="rp-mon-card"><span class="rp-mon-tag" style="background:${pc.d};color:${pc.c};">${escapeHTML(m.projeto)}</span><div class="rp-mon-title">${escapeHTML(m.titulo)}</div></div>`;
-    }).join('') || '<div class="rp-upd-empty">Vazio</div>';
-    return `<div class="rp-mon-col">
-      <div class="rp-mon-head" style="color:${GRUPO_COLOR[g]};"><span class="rp-dot" style="background:${GRUPO_COLOR[g]};"></span>${g} <span class="rp-mon-count">${items.length}</span></div>
-      ${cards}
-    </div>`;
-  }).join('');
+  const GRUPO_ORDER_REPORT = ['Em andamento', 'A Fazer', 'Feito'];
+  const mondayTableRows = MONDAY_REPORT_PROJETOS
+    .filter(proj => mondayFiltered.some(m=>m.projeto===proj))
+    .map(proj=>{
+      const pc = PROJETO_COLORS[proj] || { c:'var(--slate)', d:'var(--slate-dim)' };
+      const items = mondayFiltered
+        .filter(m=>m.projeto===proj)
+        .sort((a,b)=> GRUPO_ORDER_REPORT.indexOf(a.grupo) - GRUPO_ORDER_REPORT.indexOf(b.grupo));
+      const rows = items.map(m=>`
+        <tr>
+          <td class="rp-mon-td-status"><span class="rp-mon-status-tag" style="background:${GRUPO_COLOR[m.grupo]}22;color:${GRUPO_COLOR[m.grupo]};">${m.grupo}</span></td>
+          <td class="rp-mon-td-title">${escapeHTML(m.titulo)}</td>
+        </tr>`).join('');
+      return `
+      <div class="rp-mon-group" style="border-left-color:${pc.c};">
+        <div class="rp-mon-group-head" style="color:${pc.c};">${escapeHTML(proj)} <span class="rp-mon-group-count">${items.length}</span></div>
+        <table class="rp-mon-table2"><tbody>${rows}</tbody></table>
+      </div>`;
+    }).join('');
 
   const statusHistHtml = statusHistorico.length
     ? statusHistorico.map(h=>`<div class="rp-passo"><span class="rp-dot" style="background:var(--forest);"></span><b>${escapeHTML(h.produto)}</b> — ${escapeHTML(h.de||'—')} → <b style="color:var(--forest);">${escapeHTML(h.para)}</b><span class="rp-date">${formatDate(h.em.slice(0,10))}</span></div>`).join('')
@@ -918,7 +929,7 @@ function buildFullReportHTML(){
       <h2 class="rp-h2">Próximos Passos</h2>
       <div class="passos-panel">${passosHtml}</div>
       <h2 class="rp-h2">Atividades no Monday</h2>
-      <div class="rp-mon-table">${mondayCols}</div>
+      <div class="rp-mon-groups">${mondayTableRows}</div>
       <div class="rp-footer">Relatório gerado a partir do Painel de Produtos M&F. Dados referentes a ${todayFmt()}.</div>
     </div>`;
 }
