@@ -195,6 +195,18 @@
 
   /* ---------- Próximos passos ---------- */
   .passos-panel{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:8px 24px; }
+
+  /* ---------- Ações do relatório ---------- */
+  .report-actions{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:28px; }
+  @media (max-width:760px){ .report-actions{ grid-template-columns:1fr; } }
+  .report-action-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:20px; display:flex; flex-direction:column; gap:14px;
+  }
+  .report-action-icon{ width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .report-action-title{ font-family:var(--font-display); font-size:15px; font-weight:600; margin-bottom:4px; }
+  .report-action-desc{ font-size:12px; color:var(--muted); line-height:1.5; }
+  .report-action-card .save-btn{ align-self:flex-start; }
   .passo-row{ display:flex; align-items:center; gap:14px; padding:16px 0; border-bottom:1px solid var(--line); }
   .passo-row:last-child{ border-bottom:none; }
   .passo-badge{ width:30px; height:30px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:600; }
@@ -220,8 +232,20 @@
   .monday-col-body{ display:flex; flex-direction:column; gap:8px; }
   .monday-card{ display:flex; flex-direction:column; gap:6px; background:var(--surface-sunken); border:1px solid var(--line); border-radius:8px; padding:10px 12px; text-decoration:none; transition:.15s; }
   .monday-card:hover{ border-color:var(--line-strong); box-shadow:0 2px 8px rgba(34,32,58,0.06); }
+  .monday-card-tags{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
   .monday-tag{ align-self:flex-start; font-family:var(--font-mono); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; padding:2px 8px; border-radius:99px; }
+  .monday-pts{ font-family:var(--font-mono); font-size:10px; font-weight:600; color:var(--muted); background:var(--surface); border:1px solid var(--line-strong); padding:2px 7px; border-radius:99px; }
   .monday-title{ font-size:13px; color:var(--ink); line-height:1.4; }
+
+  .sprint-banner{
+    display:flex; align-items:center; justify-content:space-between; background:var(--brand-green);
+    background-image:linear-gradient(135deg, var(--brand-green) 0%, var(--brand-green-dark) 100%);
+    border-radius:14px; padding:18px 24px; margin-bottom:20px; color:#fff;
+  }
+  .sprint-banner-label{ font-family:var(--font-display); font-size:15px; font-weight:600; }
+  .sprint-banner-sub{ font-family:var(--font-mono); font-size:11px; color:var(--brand-lime); margin-top:3px; }
+  .sprint-banner-pts{ font-family:var(--font-display); font-size:26px; font-weight:700; display:flex; align-items:baseline; gap:5px; }
+  .sprint-banner-pts span{ font-family:var(--font-mono); font-size:11px; font-weight:400; color:var(--brand-lime); text-transform:uppercase; }
 
   footer{ max-width:1180px; margin:40px auto 0; padding:20px 28px 0; border-top:1px solid var(--line); color:var(--faint); font-size:12px; font-family:var(--font-mono); }
   .loading-screen{ min-height:50vh; display:flex; align-items:center; justify-content:center; color:var(--muted); font-family:var(--font-mono); font-size:13px; }
@@ -379,8 +403,9 @@ const PROJETO_COLORS = {
   'IACOB': { c:'var(--forest)', d:'var(--forest-dim)' },
   'Oficina': { c:'var(--brick)', d:'var(--brick-dim)' },
 };
-const GRUPO_ORDER = ['A Fazer', 'Em andamento', 'Feito'];
-const GRUPO_COLOR = { 'A Fazer':'var(--slate)', 'Em andamento':'var(--gold)', 'Feito':'var(--forest)' };
+const GRUPO_ORDER = ['📥 Backlog', '🏃 Sprint Atual', '👀 Em Revisão', '✅ Concluído'];
+const GRUPO_COLOR = { '📥 Backlog':'var(--slate)', '🏃 Sprint Atual':'var(--gold)', '👀 Em Revisão':'var(--steel)', '✅ Concluído':'var(--forest)' };
+const PRIORIDADE_COLOR = { 'Alta':'var(--brick)', 'Média':'var(--gold)', 'Baixa':'var(--slate)' };
 
 const PASSO_STATUS = {
   em_iniciacao: { label:'A iniciar', icon:'→', color:'var(--steel)' },
@@ -456,7 +481,7 @@ async function loadAll(){
     if(state[u.product_slug]) state[u.product_slug].updates.push({ id:u.id, date:u.update_date, text:u.texto });
   }
   passos = passosData.map(p=>({ id:p.id, texto:p.texto, status:p.status, prazo:p.prazo }));
-  mondayItems = mondayData.map(m=>({ id:m.id, titulo:m.titulo, projeto:m.projeto, grupo:m.grupo, url:m.url, sync:m.sincronizado_em }));
+  mondayItems = mondayData.map(m=>({ id:m.id, titulo:m.titulo, projeto:m.projeto, grupo:m.grupo, url:m.url, sync:m.sincronizado_em, statusGranular:m.status_granular, prioridade:m.prioridade, storyPoints:m.story_points, sprint:m.sprint }));
   statusHistorico = historicoData.map(h=>({ produto:h.produto_nome, de:h.status_anterior, para:h.status_novo, em:h.alterado_em }));
 }
 
@@ -736,8 +761,13 @@ function renderPassos(){
 
 function mondayCardHTML(item){
   const pc = PROJETO_COLORS[item.projeto] || { c:'var(--slate)', d:'var(--slate-dim)' };
+  const prioColor = PRIORIDADE_COLOR[item.prioridade];
   return `<a class="monday-card" href="${item.url}" target="_blank" rel="noopener">
-    <span class="monday-tag" style="background:${pc.d};color:${pc.c};">${escapeHTML(item.projeto||'—')}</span>
+    <div class="monday-card-tags">
+      <span class="monday-tag" style="background:${pc.d};color:${pc.c};">${escapeHTML(item.projeto||'—')}</span>
+      ${item.prioridade?`<span class="monday-tag" style="background:${prioColor}22;color:${prioColor};">${escapeHTML(item.prioridade)}</span>`:''}
+      ${item.storyPoints?`<span class="monday-pts">${item.storyPoints} pts</span>`:''}
+    </div>
     <span class="monday-title">${escapeHTML(item.titulo)}</span>
   </a>`;
 }
@@ -749,6 +779,9 @@ function renderMonday(){
   const lastSync = mondayItems.reduce((max,m)=> m.sync>max?m.sync:max, mondayItems[0].sync);
   const syncDate = new Date(lastSync);
   const syncFmt = `${String(syncDate.getDate()).padStart(2,'0')}/${String(syncDate.getMonth()+1).padStart(2,'0')} às ${String(syncDate.getHours()).padStart(2,'0')}:${String(syncDate.getMinutes()).padStart(2,'0')}`;
+  const sprintAtualItems = mondayItems.filter(m=>m.grupo==='🏃 Sprint Atual');
+  const sprintPts = sprintAtualItems.reduce((sum,m)=> sum + (m.storyPoints||0), 0);
+  const sprintLabel = sprintAtualItems.find(m=>m.sprint)?.sprint;
   const cols = GRUPO_ORDER.map(g=>{
     const items = mondayItems.filter(m=>m.grupo===g);
     return `<div class="monday-col">
@@ -766,6 +799,11 @@ function renderMonday(){
   })).filter(p=>p.value>0);
   const bars = barChartHTML(porProjeto);
   return `
+    <div class="sprint-banner">
+      <div><div class="sprint-banner-label">Sprint atual${sprintLabel?` — ${escapeHTML(sprintLabel)}`:''}</div>
+      <div class="sprint-banner-sub">${sprintAtualItems.length} atividade${sprintAtualItems.length===1?'':'s'} em andamento</div></div>
+      <div class="sprint-banner-pts">${sprintPts}<span>pts</span></div>
+    </div>
     ${chartPanelHTML('Itens por projeto', bars)}
     <div class="monday-sync-note">Sincronizado do Monday.com em ${syncFmt} · <a href="https://alldesk-team.monday.com/boards/18423362688" target="_blank" rel="noopener">abrir board</a> · atualiza sozinho a cada hora</div>
     <div class="monday-kanban">${cols}</div>`;
@@ -811,14 +849,25 @@ function relatorioRowsHTML(){
 function renderRelatorio(){
   const { statusRows, updRows } = relatorioRowsHTML();
   return `
-    <div class="section-head">
-      <p>Resumo quinzenal (14 dias) · pronto pra copiar e colar no e-mail</p>
-      <div style="display:flex;gap:10px;">
-        <button class="save-btn" id="copyReportBtn" onclick="copyRelatorio()">📋 Copiar resumo</button>
-        <button class="save-btn" id="pdfReportBtn" style="background:var(--steel);" onclick="printFullReport()">📄 Gerar relatório completo (PDF)</button>
+    <div class="report-actions">
+      <div class="report-action-card">
+        <div class="report-action-icon" style="background:var(--forest-dim);color:var(--forest);">📋</div>
+        <div class="report-action-text">
+          <div class="report-action-title">Resumo rápido (14 dias)</div>
+          <div class="report-action-desc">Só mudanças de status e atualizações recentes, em texto simples — pronto pra colar no corpo de um e-mail ou mensagem.</div>
+        </div>
+        <button class="save-btn" id="copyReportBtn" onclick="copyRelatorio()">Copiar resumo</button>
+      </div>
+      <div class="report-action-card">
+        <div class="report-action-icon" style="background:var(--steel-dim);color:var(--steel);">📄</div>
+        <div class="report-action-text">
+          <div class="report-action-title">Relatório completo</div>
+          <div class="report-action-desc">Portfólio, laboratório, próximos passos e Monday, com gráficos — pronto pra anexar. Abre o diálogo de impressão: escolha "Salvar como PDF".</div>
+        </div>
+        <button class="save-btn" id="pdfReportBtn" style="background:var(--steel);" onclick="printFullReport()">⬇ Baixar PDF</button>
       </div>
     </div>
-    <div class="section-head"><h2 style="font-family:var(--font-display);font-size:16px;">Mudanças de status</h2></div>
+    <div class="section-head" style="margin-top:8px;"><h2 style="font-family:var(--font-display);font-size:16px;">Mudanças de status</h2></div>
     <div class="passos-panel">${statusRows}</div>
     <div class="section-head" style="margin-top:24px;"><h2 style="font-family:var(--font-display);font-size:16px;">Atualizações registradas</h2></div>
     <div class="passos-panel">${updRows}</div>`;
@@ -866,7 +915,7 @@ function buildFullReportHTML(){
     label:proj, value:mondayFiltered.filter(m=>m.projeto===proj).length, color:(PROJETO_COLORS[proj]||{c:'var(--slate)'}).c,
   })).filter(s=>s.value>0);
 
-  const GRUPO_ORDER_REPORT = ['Em andamento', 'A Fazer', 'Feito'];
+  const GRUPO_ORDER_REPORT = ['🏃 Sprint Atual', '👀 Em Revisão', '📥 Backlog', '✅ Concluído'];
   const mondayTableRows = MONDAY_REPORT_PROJETOS
     .filter(proj => mondayFiltered.some(m=>m.projeto===proj))
     .map(proj=>{
